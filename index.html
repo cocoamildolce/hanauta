@@ -76,6 +76,17 @@ textarea{width:100%;height:90px;margin-top:8px;font-size:12px}
 .chip.rest{opacity:.55;cursor:default;border-style:dashed;background:transparent}
 .chip.rest .nm{font-size:16px;color:var(--mut)}
 .chip{position:relative}
+.chip .fg{font-size:13px;color:#9ff0c0;line-height:1.2} .chip .fg b{font-size:15px} .fga{opacity:.75;font-size:.8em;margin-left:2px}
+.chip.cur .fg,.chip.cur .fg b{color:#2a1d00}
+.pq .fg{margin-left:6px;color:#9ff0c0;font-size:14px}
+.pfFingRow{display:flex;justify-content:center;margin-top:2px}
+body.fingon #pfNow{font-size:clamp(48px,10vh,96px)} body.fingon #pfNext{font-size:clamp(56px,12.5vh,120px)} body.fingon #pfArrow{font-size:clamp(34px,7vh,64px)}
+.pfFing{color:#9ff0c0;font-weight:800;white-space:nowrap;align-self:center;background:rgba(159,240,192,.1);border:1px solid rgba(159,240,192,.35);border-radius:12px;padding:.05em .35em}
+.pfFing[hidden]{display:none}
+#pfNowFing{font-size:clamp(24px,4.6vh,44px)} #pfNextFing{font-size:clamp(34px,7vh,68px)}
+.pfFing .fgl{font-size:.4em;font-weight:700;margin-right:.4em;opacity:.8;vertical-align:.5em}
+#fingTable{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px 12px;margin:8px 0}
+.fgrow{display:flex;align-items:center;gap:6px;font-size:13px} .fgrow span{flex:1;white-space:nowrap} .fgrow input{width:74px;padding:3px 6px}
 .recbox{margin:12px 0 4px;background:#221e2f;border-radius:12px;padding:10px 12px}
 .recbox summary{color:var(--tx)}
 #recGo.recording{background:#e0607e}
@@ -214,6 +225,12 @@ body.perfing{overflow:hidden}
     <div class="row"><span class="lbl">調</span><select id="key"><option value="auto">自動で推定</option><option value="0">C-Dur（ハ長調）</option><option value="1">Des-Dur（変ニ長調）</option><option value="2">D-Dur（ニ長調）</option><option value="3">Es-Dur（変ホ長調）</option><option value="4">E-Dur（ホ長調）</option><option value="5">F-Dur（ヘ長調）</option><option value="6">Ges-Dur（変ト長調）</option><option value="7">G-Dur（ト長調）</option><option value="8">As-Dur（変イ長調）</option><option value="9">A-Dur（イ長調）</option><option value="10">B-Dur（変ロ長調）</option><option value="11">H-Dur（ロ長調）</option><option value="12">c-Moll（ハ短調）</option><option value="13">cis-Moll（嬰ハ短調）</option><option value="14">d-Moll（ニ短調）</option><option value="15">es-Moll（変ホ短調）</option><option value="16">e-Moll（ホ短調）</option><option value="17">f-Moll（ヘ短調）</option><option value="18">fis-Moll（嬰ヘ短調）</option><option value="19">g-Moll（ト短調）</option><option value="20">gis-Moll（嬰ト短調）</option><option value="21">a-Moll（イ短調）</option><option value="22">b-Moll（変ロ短調）</option><option value="23">h-Moll（ロ短調）</option></select><span id="keyInfo" class="pill"></span></div>
     <div class="row"><span class="lbl">移調</span><select id="transpose"><option value="12">+12（1オクターブ上）</option><option value="11">+11</option><option value="10">+10</option><option value="9">+9</option><option value="8">+8</option><option value="7">+7</option><option value="6">+6</option><option value="5">+5</option><option value="4">+4</option><option value="3">+3</option><option value="2">+2</option><option value="1">+1</option><option value="0" selected>なし</option><option value="-1">-1</option><option value="-2">-2</option><option value="-3">-3</option><option value="-4">-4</option><option value="-5">-5</option><option value="-6">-6</option><option value="-7">-7</option><option value="-8">-8</option><option value="-9">-9</option><option value="-10">-10</option><option value="-11">-11</option><option value="-12">-12（1オクターブ下）</option></select><span class="hint" style="margin:0">半音単位。楽器の音域に合わせて上下できます</span></div>
     <div class="row" hidden><span class="lbl">♭と♯</span><select id="flat"><option value="auto">調に合わせる</option><option value="flat">常に♭系（Des, Es, Ges, As, B）</option><option value="sharp">常に♯系（Cis, Dis, Fis, Gis, Ais）</option></select></div>
+    <div class="row hlrow"><label class="chk"><input id="fingOn" type="checkbox">指番号を表示する（ユーフォニアム）</label></div>
+    <details style="margin:4px 0 8px"><summary>指番号の表を見る・直す</summary>
+      <p class="hint">実音（鳴っている高さ）に対する指番号です。チューニングB♭を B♭3、ハイB♭を B♭4、下のB♭を B♭2 としています。括弧の中は替え指で、「12(3)」のように書くと括弧の部分が小さく併記されます。直した内容はこのブラウザに保存されます。表にない高さ（E2 以下・F#5 以上）は「–」と表示します。</p>
+      <div id="fingTable"></div>
+      <div class="row"><button id="fingReset" class="btn">最初の表に戻す</button></div>
+    </details>
     <div class="row"><span class="lbl">併記</span><select id="second"><option value="none" selected>なし</option><option value="do">ドレミ（固定ド）</option></select></div>
     <div class="row"><span class="lbl">横の拡大</span><input id="zoom" type="range" min="40" max="300" value="110"></div>
     <p class="hint">音名は C・C#・D・E♭・E・F・F#・G・A♭・A・B♭・B の表記で統一しています。オクターブ番号は A4＝440Hz の国際式（C4 が真ん中のド）。バー画面では、調の音階に含まれる行を明るく、主音の行を紫に、音階外の行を暗くしています。<span id="tune"></span></p>
@@ -250,16 +267,16 @@ body.perfing{overflow:hidden}
 <div id="perf" hidden>
   <div class="pfHead"><span id="pfTitle"></span><button id="pfClose" class="btn">✕ 閉じる</button></div>
   <div class="pfMain">
-    <div id="pfNowBox" class="pfBox"><span class="pfLbl">いま</span><div class="pfName"><b id="pfNow">–</b><sub id="pfNowOct"></sub></div><div class="pfSub"><span id="pfNowSec"></span><span id="pfNowLen"></span></div></div>
+    <div id="pfNowBox" class="pfBox"><span class="pfLbl">いま</span><div class="pfName"><b id="pfNow">–</b><sub id="pfNowOct"></sub></div><div class="pfFingRow"><span id="pfNowFing" class="pfFing" hidden></span></div><div class="pfSub"><span id="pfNowSec"></span><span id="pfNowLen"></span></div></div>
     <div id="pfBar"><div id="pfBarIn"></div></div>
-    <div id="pfNextBox" class="pfBox"><span class="pfLbl">つぎ</span><div class="pfName"><span id="pfArrow"></span><b id="pfNext">–</b><sub id="pfNextOct"></sub></div><div class="pfSub"><span id="pfNextSec"></span><span id="pfNextInfo"></span></div></div>
+    <div id="pfNextBox" class="pfBox"><span class="pfLbl">つぎ</span><div class="pfName"><span id="pfArrow"></span><b id="pfNext">–</b><sub id="pfNextOct"></sub></div><div class="pfFingRow"><span id="pfNextFing" class="pfFing" hidden></span></div><div class="pfSub"><span id="pfNextSec"></span><span id="pfNextInfo"></span></div></div>
     <div class="pfQ"><span class="pfLbl" style="position:static">そのあと</span><div id="pfQueue"></div></div>
   </div>
   <div class="pfRollWrap"><canvas id="pfRoll"></canvas></div>
   <div class="pfCtl">
     <div class="pfBtns"><button id="pfRew" class="round sm" aria-label="最初に戻る">⏮</button><button id="pfPrev" class="round sm" aria-label="前の音へ">◀</button><button id="pfPlay" class="round" aria-label="再生／一時停止">▶</button><button id="pfNextBtn" class="round sm" aria-label="次の音へ">▶|</button>
       <select id="pfSpeed" aria-label="再生速度"><option value="0.5">0.5倍</option><option value="0.75">0.75倍</option><option value="1" selected>等速</option><option value="1.25">1.25倍</option><option value="1.5">1.5倍</option></select></div>
-    <div class="pfBtns"><label class="chk"><input id="pfCountIn" type="checkbox" checked>1小節カウント</label><label class="chk"><input id="pfMetro" type="checkbox">メトロノーム</label><label class="chk"><input id="pfSynth" type="checkbox" checked>お手本の音</label></div>
+    <div class="pfBtns"><label class="chk"><input id="pfCountIn" type="checkbox" checked>1小節カウント</label><label class="chk"><input id="pfFing" type="checkbox">指番号</label><label class="chk"><input id="pfMetro" type="checkbox">メトロノーム</label><label class="chk"><input id="pfSynth" type="checkbox" checked>お手本の音</label></div>
   </div>
   <div id="pfCount" hidden></div>
 </div>
@@ -1121,7 +1138,7 @@ function seqData(notes){
 let seqSig='', seqCur=-2;
 function syncSeq(notes){
   const s=S.song;
-  const sig=s? [S.ver,s.bpm,s.beatOffset,s.barShift,s.mode,(s.beats?s.beats.length+':'+s.beats[0]:''),s.orn,s.beatsPerBar,s.quantize,s.tidyShort,s.tidyGap,s.transpose,s.key,s.snap,s.keyHint,S.acc,S.second,s.id,s.name].join('|') : 'none';
+  const sig=s? [S.ver,s.bpm,s.beatOffset,s.barShift,s.mode,(s.beats?s.beats.length+':'+s.beats[0]:''),s.orn,s.beatsPerBar,s.quantize,s.tidyShort,s.tidyGap,s.transpose,s.key,s.snap,s.keyHint,S.acc,S.second,S.fing,S.fingVer,s.id,s.name].join('|') : 'none';
   if(sig===seqSig) return; seqSig=sig; seqCur=-2;
   const box=$('seq'); box.innerHTML='';
   const bars=seqData(notes);
@@ -1138,6 +1155,7 @@ function syncSeq(notes){
         c.innerHTML='<span class="nm"></span><span class="sec"></span><span class="ln"></span>';
         c.querySelector('.nm').innerHTML=''; const b=document.createElement('b'); b.textContent=deName(it.p); const sub=document.createElement('sub'); sub.textContent=octaveOf(it.p);
         c.querySelector('.nm').append(b,sub); c.querySelector('.sec').textContent=secName(it.p); c.querySelector('.ln').textContent=lenName(it.u);
+        if(S.fing){ const fg=document.createElement('span'); fg.className='fg'; fingInto(fg,it.p,false); c.insertBefore(fg,c.querySelector('.sec')); }
         if(it.snapped||it.amb){ const bd=document.createElement('span'); bd.className='badge'+(it.amb?' q':''); bd.textContent=it.snapped?'補正':'要確認'; c.append(bd); if(it.amb) c.classList.add('amb'); }
         c.onclick=()=>{ const n=viewNotes().find(x=>x.i===it.i); if(!n) return; if(S.playing) stop(); S.pos=n.s; S.sel=it.i; syncEdit(); draw(); };
       }
@@ -1156,7 +1174,7 @@ function seqText(){
   const s=S.song; if(!s) return ''; const bars=seqData(viewNotes()); if(!bars.length) return '';
   const k=KEYS[curKey()];
   const head=(s.name||'')+'  '+tempoText()+'  '+s.beatsPerBar+'/4  '+k.de+'（'+k.ja+'）'+(s.transpose?'  移調'+(s.transpose>0?'+':'')+s.transpose:'');
-  return head+'\n'+bars.map(([bi,its])=>(bi<0?'前':bi+1)+': '+its.map(it=>it.rest?'休('+lenName(it.u)+')':deName(it.p)+octaveOf(it.p)+'('+lenName(it.u)+')').join(' ')).join('\n');
+  return head+'\n'+bars.map(([bi,its])=>(bi<0?'前':bi+1)+': '+its.map(it=>it.rest?'休('+lenName(it.u)+')':deName(it.p)+octaveOf(it.p)+(S.fing?'['+fingText(it.p)+']':'')+'('+lenName(it.u)+')').join(' ')).join('\n');
 }
 
 // --- 音符の編集 ---
@@ -1196,7 +1214,7 @@ function syncEdit(){ const box=$('editBox');
   const n=S.song.notes[S.sel], p=n.p+(S.song.transpose||0); box.hidden=false; document.body.classList.add('editing');
   const ct=Math.round(((n.f==null?n.p:n.f)-n.p)*100);
   $('selName').textContent=deName(p)+octaveOf(p);
-  $('selInfo').textContent=(S.second==='none'?'':secName(p)+'　')+(n.m?'手で直した音':'歌った高さは'+(ct>=0?'+':'')+ct+'セント'+(Math.abs(ct)>30?'（要確認）':''));
+  $('selInfo').textContent=(S.fing?'指 '+fingText(p)+'　':'')+(S.second==='none'?'':secName(p)+'　')+(n.m?'手で直した音':'歌った高さは'+(ct>=0?'+':'')+ct+'セント'+(Math.abs(ct)>30?'（要確認）':''));
 }
 
 // --- キャンバス操作 ---
@@ -1343,12 +1361,37 @@ $('importJson').onclick=()=>{
   catch(e){ setStatus('曲データの形式が正しくありません。',true); }
 };
 
+// --- 指番号（ユーフォニアム）。実音の高さ（MIDI番号）→ 指番号。括弧内は替え指 ---
+// 下のB♭=B♭2(46)、チューニングB♭=B♭3(58)、ハイB♭=B♭4(70)
+const FING_LO=41, FING_DEF=['13','23','12','1','2','0', '24','13','23','12','1','2','0','23','12','1','2','0', '12','1','2','0','1','2','0','23','12','1','2','0', '12','1','2','0','1','2','0']
+  .map(v=> v==='12'?'12(3)' : v==='13'?'13(4)' : v==='24'?'24(123)' : v); // 1+2=3番、1+3=4番、2+4=1+2+3 は管の長さが同じ組み合わせ
+let FING=FING_DEF.slice(); S.fing=false; S.fingVer=0;
+try{ const t=JSON.parse(localStorage.getItem('humroll.fing.v1')||'null'); if(Array.isArray(t)&&t.length===FING_DEF.length) FING=t.map(String); S.fing=localStorage.getItem('humroll.fingOn')==='1'; }catch(e){}
+function fingOf(p){ if(!S.fing) return null; const v=FING[p-FING_LO]; if(v==null||v==='') return {main:'–',alt:''}; const m=/^\s*([^(（]*)[(（]?([^)）]*)[)）]?\s*$/.exec(v); return {main:(m?m[1]:v).trim()||'–', alt:m?m[2].trim():''}; }
+function fingText(p){ const f=fingOf(p); return f? f.main+(f.alt?'('+f.alt+')':'') : ''; }
+function fingInto(el,p,label){ el.textContent=''; const f=fingOf(p); el.hidden=!f; if(!f) return;
+  if(label){ const l=document.createElement('span'); l.className='fgl'; l.textContent='指'; el.append(l); }
+  const b=document.createElement('b'); b.textContent=f.main; el.append(b); if(f.alt){ const a=document.createElement('span'); a.className='fga'; a.textContent='('+f.alt+')'; el.append(a); } }
+function fingRefresh(){ S.fingVer++; pfKey=''; lastNow=''; syncEdit(); draw(); }
+function fingBuildTable(){ const box=$('fingTable'); box.innerHTML='';
+  for(let p=FING_LO+FING.length-1;p>=FING_LO;p--){ const row=document.createElement('label'); row.className='fgrow';
+    const nm=document.createElement('span'); nm.textContent=deName(p)+octaveOf(p)+(p===70?'（ハイB♭）':p===58?'（チューニングB♭）':p===46?'（下のB♭）':'');
+    const inp=document.createElement('input'); inp.type='text'; inp.value=FING[p-FING_LO]; inp.setAttribute('inputmode','text');
+    inp.onchange=()=>{ FING[p-FING_LO]=inp.value.trim(); try{ localStorage.setItem('humroll.fing.v1',JSON.stringify(FING)); }catch(e){} fingRefresh(); };
+    row.append(nm,inp); box.append(row); } }
+$('fingOn').checked=S.fing; $('pfFing').checked=S.fing;
+document.body.classList.toggle('fingon',S.fing);
+function fingSet(on){ S.fing=on; document.body.classList.toggle('fingon',on); $('fingOn').checked=on; $('pfFing').checked=on; try{ localStorage.setItem('humroll.fingOn',on?'1':'0'); }catch(e){} fingRefresh(); }
+$('fingOn').onchange=e=>fingSet(e.target.checked); $('pfFing').onchange=e=>fingSet(e.target.checked);
+$('fingReset').onclick=()=>{ FING=FING_DEF.slice(); try{ localStorage.removeItem('humroll.fing.v1'); }catch(e){} fingBuildTable(); fingRefresh(); };
+fingBuildTable();
+
 // --- 演奏モード（いまの音・つぎの音を大きく表示） ---
 S.perf=false; S.countIn=true;
 const pcv=$('pfRoll'), p2=pcv.getContext('2d'); let pfKey='';
 function lenOf(n){ return lenName(Math.max(1,Math.round((beatOf(n.e)-beatOf(n.s))*12))); }
 function bigName(el,nm){ el.textContent=nm[0]; if(nm.length>1){ const a=document.createElement('span'); a.className='accd'; a.textContent=nm.slice(1); el.append(a); } } // ♭・# は少し小さく添える
-function pfSet(pre,n){ if(n) bigName($(pre),deName(n.p)); else $(pre).textContent='休'; $(pre+'Oct').textContent=n? octaveOf(n.p):''; $(pre+'Sec').textContent=n? secName(n.p):''; }
+function pfSet(pre,n){ if(n) bigName($(pre),deName(n.p)); else $(pre).textContent='休'; $(pre+'Oct').textContent=n? octaveOf(n.p):''; $(pre+'Sec').textContent=n? secName(n.p):''; if(n) fingInto($(pre+'Fing'),n.p,true); else $(pre+'Fing').hidden=true; }
 function perfDraw(notes){
   if(!S.perf) return;
   const pos=S.pos; let ci=-1, ni=-1;
@@ -1358,7 +1401,7 @@ function perfDraw(notes){
   const cnt=S.count&&S.playing&&ctx.currentTime<startCtx? Math.min(S.count.n,Math.floor((ctx.currentTime-S.count.t0)/S.count.bd)+1) : 0;
   $('pfCount').hidden=!cnt; if(cnt>0) $('pfCount').textContent=String(Math.max(1,cnt));
   // カウント中や曲の頭では、最初の音を「つぎ」に出す
-  const key=[ci,ni,S.ver,useFlat(),S.second,S.song.transpose].join('|');
+  const key=[ci,ni,S.ver,useFlat(),S.second,S.song.transpose,S.fing,S.fingVer].join('|');
   if(key!==pfKey){ pfKey=key;
     pfSet('pfNow',cur); $('pfNowLen').textContent=cur? lenOf(cur):'';
     $('pfNowBox').classList.toggle('rest',!cur);
@@ -1366,10 +1409,10 @@ function perfDraw(notes){
       const ar=$('pfArrow'); ar.textContent= first? '' : d>0?'↑':d<0?'↓':'→'; ar.className= d>0?'up':d<0?'dn':'same';
       $('pfNextInfo').textContent=(first?'':(d===0?'同じ音':Math.abs(d)+'半音'+(d>0?'上':'下'))+'・')+lenOf(nx);
       $('pfNextBox').classList.toggle('acc',!inScale(nx.p)); }
-    else { $('pfNext').textContent='おわり'; $('pfNextOct').textContent=''; $('pfNextSec').textContent=''; $('pfArrow').textContent=''; $('pfNextInfo').textContent=''; }
+    else { $('pfNextFing').hidden=true; $('pfNext').textContent='おわり'; $('pfNextOct').textContent=''; $('pfNextSec').textContent=''; $('pfArrow').textContent=''; $('pfNextInfo').textContent=''; }
     const q=$('pfQueue'); q.innerHTML='';
     if(nx) for(let k=ni+1;k<Math.min(notes.length,ni+5);k++){ const n=notes[k], c=document.createElement('span'); c.className='pq'+(inScale(n.p)?'':' acc');
-      const b=document.createElement('b'); b.textContent=deName(n.p); const sub=document.createElement('sub'); sub.textContent=octaveOf(n.p); const l=document.createElement('i'); l.textContent=lenOf(n); c.append(b,sub,l); q.append(c); }
+      const b=document.createElement('b'); b.textContent=deName(n.p); const sub=document.createElement('sub'); sub.textContent=octaveOf(n.p); const l=document.createElement('i'); l.textContent=lenOf(n); c.append(b,sub,l); if(S.fing){ const fg=document.createElement('span'); fg.className='fg'; fingInto(fg,n.p,false); c.append(fg); } q.append(c); }
   }
   // つぎの音までの進み具合
   const a= cur? cur.s : (prev&&prev!==nx&&ni>0? prev.e : 0), b= nx? nx.s : (cur? cur.e : songEnd());
