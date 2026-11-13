@@ -125,11 +125,20 @@ body.perfing{overflow:hidden}
 #pfCount{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:42vw;font-weight:800;color:rgba(255,209,102,.9);background:rgba(11,10,16,.55);pointer-events:none}
 #pfCount[hidden]{display:none}
 #perf[hidden]{display:none}
-@media (orientation:landscape) and (max-height:520px){
-  .pfMain{flex-direction:row;flex-wrap:wrap;align-items:stretch}
-  #pfNowBox{flex:4;order:1} #pfNextBox{flex:5;order:2} #pfBar{order:3;flex:0 0 100%} .pfQ{order:4;flex:0 0 100%}
-  .pfRollWrap{height:70px} .pfCtl{flex-direction:row;justify-content:center;gap:16px}
-}
+/* 演奏モード：バーを主役にし、「いま」「つぎ」は上の細い帯にまとめる */
+.pfMain{flex:none;flex-direction:row;flex-wrap:wrap;gap:6px}
+.pfBox{flex-direction:row;align-items:center;justify-content:flex-start;gap:8px;padding:4px 10px 4px 34px;border-radius:12px;min-width:0}
+#pfNowBox{flex:1 1 0;order:1} #pfNextBox{flex:1.25 1 0;order:2;border-width:2px}
+.pfLbl{top:50%;left:8px;transform:translateY(-50%);font-size:10px;letter-spacing:0;writing-mode:vertical-rl}
+.pfQ .pfLbl{writing-mode:horizontal-tb;transform:none}
+#pfNow,body.fingon #pfNow{font-size:30px} #pfNext,body.fingon #pfNext{font-size:34px}
+.pfName sub{font-size:15px} #pfArrow,body.fingon #pfArrow{font-size:22px;margin-right:2px}
+.pfFingRow{margin:0} #pfNowFing{font-size:20px} #pfNextFing{font-size:22px} .pfFing{margin-left:0;border-radius:8px}
+.pfSub{display:none}
+#pfBar{order:3;flex:0 0 100%;height:6px}
+.pfQ{display:none}
+.pfRollWrap{flex:1 1 auto;min-height:0;height:auto}
+
 #tap.hit{transform:scale(.93);background:#fff}
 .chip .badge{position:absolute;top:-7px;right:-5px;font-size:9px;background:#5b4bd6;color:#fff;border-radius:6px;padding:0 4px;line-height:14px}
 .chip .badge.q{background:#b54863}
@@ -276,7 +285,7 @@ body.perfing{overflow:hidden}
   <div class="pfCtl">
     <div class="pfBtns"><button id="pfRew" class="round sm" aria-label="最初に戻る">⏮</button><button id="pfPrev" class="round sm" aria-label="前の音へ">◀</button><button id="pfPlay" class="round" aria-label="再生／一時停止">▶</button><button id="pfNextBtn" class="round sm" aria-label="次の音へ">▶|</button>
       <select id="pfSpeed" aria-label="再生速度"><option value="0.5">0.5倍</option><option value="0.75">0.75倍</option><option value="1" selected>等速</option><option value="1.25">1.25倍</option><option value="1.5">1.5倍</option></select></div>
-    <div class="pfBtns"><label class="chk"><input id="pfCountIn" type="checkbox" checked>1小節カウント</label><label class="chk"><input id="pfFing" type="checkbox">指番号</label><label class="chk"><input id="pfMetro" type="checkbox">メトロノーム</label><label class="chk"><input id="pfSynth" type="checkbox" checked>お手本の音</label></div>
+    <div class="pfBtns"><label class="chk">横幅<input id="pfZoom" type="range" min="40" max="300" value="110" style="width:90px"></label><label class="chk"><input id="pfCountIn" type="checkbox" checked>1小節カウント</label><label class="chk"><input id="pfFing" type="checkbox">指番号</label><label class="chk"><input id="pfMetro" type="checkbox">メトロノーム</label><label class="chk"><input id="pfSynth" type="checkbox" checked>お手本の音</label></div>
   </div>
   <div id="pfCount" hidden></div>
 </div>
@@ -1419,28 +1428,40 @@ function perfDraw(notes){
   const fr= b>a? Math.max(0,Math.min(1,(pos-a)/(b-a))) : 0;
   $('pfBarIn').style.transform='scaleX('+fr.toFixed(3)+')';
   $('pfNextBox').classList.toggle('soon', !!nx&&S.playing&&(nx.s-pos)/S.speed<0.3);
-  // 下の流れるバー
+  // 流れるバー（演奏中に見る主役）。バーの中に音名、その下の段に指番号。次に来る音は白枠で示す
   const W=pcv.clientWidth, H=pcv.clientHeight; if(!W) return;
   p2.clearRect(0,0,W,H); p2.fillStyle='#14121c'; p2.fillRect(0,0,W,H);
   let lo=Infinity, hi=-Infinity; for(const n of notes){ if(n.p<lo) lo=n.p; if(n.p>hi) hi=n.p; }
-  const bh=Math.min(30,Math.max(20,H/6)), ph=W*0.22, pps=S.pps*1.15, X=t=>ph+(t-pos)*pps, Y=p=> hi===lo? (H-bh)/2 : 4+(hi-p)/(hi-lo)*(H-bh-8);
+  const fing=S.fing, bh=Math.max(fing?46:34,Math.min(fing?64:50,H/8)), padT=24, padB=fing?24:8;
+  const ph=W*0.2, pps=S.pps*1.15, X=t=>ph+(t-pos)*pps, Y=p=> hi===lo? (H-bh)/2 : padT+(hi-p)/(hi-lo)*(H-bh-padT-padB);
   for(let k=Math.ceil(beatOf(pos-ph/pps)); timeOf(k)<=pos+(W-ph)/pps; k++){ const kk=k-(S.song.barShift||0), bar=((kk%S.song.beatsPerBar)+S.song.beatsPerBar)%S.song.beatsPerBar===0;
     p2.fillStyle=bar?'rgba(255,255,255,.25)':'rgba(255,255,255,.08)'; p2.fillRect(Math.round(X(timeOf(k))),0,1,H); }
-  p2.textBaseline='middle'; p2.textAlign='left'; p2.font='bold 15px system-ui,sans-serif';
-  for(const n of notes){ const x0=X(n.s), x1=X(n.e); if(x1<0||x0>W) continue; const on=n===cur, past=pos>=n.e, y=Y(n.p), w=Math.max(3,x1-x0-2);
-    p2.fillStyle= on?'#ffd166':past?'#5a3d4a':'#7b6cf6'; p2.beginPath(); p2.roundRect? p2.roundRect(x0,y,w,bh,6) : p2.rect(x0,y,w,bh); p2.fill();
-    const nm=deName(n.p);
-    if(w>p2.measureText(nm).width+8){ p2.fillStyle=on?'#2a1d00':past?'#b9a3ad':'#fff'; p2.fillText(nm,x0+5,y+bh/2+1); }
-    else { p2.font='bold 13px system-ui,sans-serif'; p2.textAlign='center'; p2.fillStyle=on?'#ffd166':past?'#8d7a84':'#fff'; // 短いバーは、すぐ上（上に余白がなければ下）に音名を書く
-      p2.fillText(nm,x0+w/2, y>=15? y-8 : y+bh+9); p2.textAlign='left'; p2.font='bold 15px system-ui,sans-serif'; } }
-  p2.fillStyle='#fff'; p2.fillRect(Math.round(ph),0,2,H);
+  const nf=Math.round(Math.min(24,bh*0.42)), ff=Math.round(Math.min(22,bh*0.4)), NF='bold '+nf+'px system-ui,sans-serif', FF='bold '+ff+'px system-ui,sans-serif';
+  const rr2=(x,y,w,h,r)=>{ p2.beginPath(); if(p2.roundRect) p2.roundRect(x,y,w,h,r); else p2.rect(x,y,w,h); };
+  p2.textBaseline='middle';
+  const texts=[];
+  for(const n of notes){ const x0=X(n.s), x1=X(n.e); if(x1<-40||x0>W+40) continue; const on=n===cur, past=pos>=n.e, isNext=n===nx, y=Y(n.p), w=Math.max(4,x1-x0-2);
+    p2.fillStyle= on?'#ffd166':past?'#4a3440':'#7b6cf6'; rr2(x0,y,w,bh,8); p2.fill();
+    if(on){ p2.fillStyle='#e0607e'; rr2(x0,y,Math.max(0,Math.min(w,X(pos)-x0)),bh,8); p2.fill(); }
+    if(isNext){ p2.strokeStyle='#fff'; p2.lineWidth=3; rr2(x0+1.5,y+1.5,w-3,bh-3,7); p2.stroke(); }
+    const nm=deName(n.p), fg=fing? fingOf(n.p):null, ft=fg? fg.main:'', fa=fg&&fg.alt? '('+fg.alt+')':'';
+    p2.font=NF; const wn=p2.measureText(nm).width; p2.font=FF; const wf=fg? p2.measureText(ft).width:0; let wa=0; if(fa){ p2.font='bold '+Math.round(ff*0.7)+'px system-ui,sans-serif'; wa=p2.measureText(fa).width+3; }
+    const inside= w>=Math.max(wn,wf+wa)+12;
+    texts.push({x0,y,w,nm,ft,fa,on,past,inside,wf}); }
+  for(const t of texts){ const dark=t.on, cN= t.past?'#a8939d': dark?'#2a1d00':'#fff', cF= t.past?'#7fa893': dark?'#0b5a34':'#b6ffd6';
+    if(t.inside){ p2.textAlign='left'; p2.font=NF; p2.fillStyle=cN; p2.fillText(t.nm,t.x0+7, fing? t.y+bh*0.3 : t.y+bh/2+1);
+      if(fing){ p2.font=FF; p2.fillStyle=cF; p2.fillText(t.ft,t.x0+7,t.y+bh*0.72); if(t.fa){ p2.font='bold '+Math.round(ff*0.7)+'px system-ui,sans-serif'; p2.fillText(t.fa,t.x0+10+t.wf,t.y+bh*0.74); } } }
+    else { // 短いバー：音名はバーの上、指番号はバーの下
+      p2.textAlign='center'; const cx=t.x0+t.w/2; p2.font='bold '+Math.round(nf*0.8)+'px system-ui,sans-serif'; p2.fillStyle= t.past?'#8d7a84': t.on?'#ffd166':'#fff'; p2.fillText(t.nm,cx,t.y-Math.round(nf*0.5));
+      if(fing){ p2.font='bold '+Math.round(ff*0.8)+'px system-ui,sans-serif'; p2.fillStyle= t.past?'#5f8a74':'#9ff0c0'; p2.fillText(t.ft,cx,t.y+bh+Math.round(ff*0.5)); } } } // 短いバーでは替え指を省いて主の指だけ（隣と重なるため）
+  p2.textAlign='left'; p2.fillStyle='#fff'; p2.fillRect(Math.round(ph),0,2,H);
 }
 function perfResize(){ if(!S.perf) return; const dpr=window.devicePixelRatio||1, w=pcv.parentElement.clientWidth, h=pcv.parentElement.clientHeight;
   pcv.style.width=w+'px'; pcv.style.height=h+'px'; pcv.width=Math.round(w*dpr); pcv.height=Math.round(h*dpr); p2.setTransform(dpr,0,0,dpr,0,0); draw(); }
 function perfOpen(){ if(!S.song||!S.song.notes.length){ setStatus('先に録音を読み込んで音を取ってください。',true); return; }
   stop(); S.perf=true; S.sel=-1; syncEdit(); pfKey=''; $('perf').hidden=false; document.body.classList.add('perfing');
   $('pfTitle').textContent=(S.song.name||'')+'　'+tempoText()+'　'+KEYS[curKey()].de;
-  $('pfMetro').checked=S.metro; $('pfSynth').checked=S.synth; $('pfSpeed').value=String(S.speed); $('pfCountIn').checked=S.countIn; perfResize(); }
+  $('pfMetro').checked=S.metro; $('pfSynth').checked=S.synth; $('pfSpeed').value=String(S.speed); $('pfCountIn').checked=S.countIn; $('pfZoom').value=String(S.pps); perfResize(); }
 function perfClose(){ stop(); S.perf=false; $('perf').hidden=true; document.body.classList.remove('perfing'); draw(); }
 function blip(n){ if(!S.synth||!n) return; try{ const c=getCtx(); if(c.resume) c.resume(); const o=c.createOscillator(), g=c.createGain(), a=c.currentTime+0.01;
   o.type='triangle'; o.frequency.value=midiToHz(n.p); g.gain.setValueAtTime(0,a); g.gain.linearRampToValueAtTime(0.22,a+0.015); g.gain.linearRampToValueAtTime(0,a+0.45); o.connect(g); g.connect(c.destination); o.start(a); o.stop(a+0.5); }catch(e){} }
@@ -1453,6 +1474,7 @@ $('pfRew').onclick=()=>{ stop(); S.pos=0; draw(); };
 $('pfPrev').onclick=()=>stepNote(-1); $('pfNextBtn').onclick=()=>stepNote(1);
 $('pfSpeed').onchange=e=>{ const was=S.playing; stop(); S.speed=+e.target.value; $('speed').value=e.target.value; if(was) play(); };
 $('pfMetro').onchange=e=>{ S.metro=e.target.checked; $('metro').checked=S.metro; restartIfPlaying(); };
+$('pfZoom').oninput=e=>{ S.pps=+e.target.value; $('zoom').value=e.target.value; draw(); };
 $('pfSynth').onchange=e=>{ S.synth=e.target.checked; $('synth').checked=S.synth; restartIfPlaying(); };
 $('pfCountIn').onchange=e=>{ S.countIn=e.target.checked; };
 window.addEventListener('resize',perfResize);
