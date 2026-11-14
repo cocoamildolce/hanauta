@@ -76,6 +76,11 @@ textarea{width:100%;height:90px;margin-top:8px;font-size:12px}
 .chip.rest{opacity:.55;cursor:default;border-style:dashed;background:transparent}
 .chip.rest .nm{font-size:16px;color:var(--mut)}
 .chip{position:relative}
+.seekrow{display:flex;align-items:center;gap:8px;margin-top:8px}
+.seekrow input[type=range]{flex:1;width:auto;min-width:0;height:28px;accent-color:var(--hot)}
+.barno2{font-size:12px;color:var(--mut);min-width:3.2em;text-align:right;font-variant-numeric:tabular-nums}
+.pfTime{font-size:12px;color:var(--mut);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pfCtl .seekrow{margin-top:0}
 .chip .fg{font-size:13px;color:#9ff0c0;line-height:1.2} .chip .fg b{font-size:15px} .fga{opacity:.75;font-size:.8em;margin-left:2px}
 .chip.cur .fg,.chip.cur .fg b{color:#2a1d00}
 .pq .fg{margin-left:6px;color:#9ff0c0;font-size:14px}
@@ -184,6 +189,7 @@ body.perfing{overflow:hidden}
     <div class="now"><span id="nowDe">–</span><span id="nowOct"></span><span id="nowEn"></span></div>
     <div class="rollwrap"><canvas id="roll"></canvas></div>
     <div class="legend"><span><i style="background:#7b6cf6"></i>これから</span><span><i style="background:#ffd166"></i>いまの音</span><span><i style="background:#e0607e"></i>歌い終えた音</span><span><i style="background:rgba(120,200,255,.6);height:2px"></i>実際に歌った音程</span></div>
+    <div class="seekrow"><input id="seek" type="range" min="0" max="1" step="0.01" value="0" aria-label="再生位置" disabled><span id="barNo" class="barno2"></span></div>
     <div class="transport">
       <button id="play" class="round" aria-label="再生／一時停止">▶</button>
       <button id="rew" class="round sm" aria-label="最初に戻る">⏮</button>
@@ -283,6 +289,7 @@ body.perfing{overflow:hidden}
   </div>
   <div class="pfRollWrap"><canvas id="pfRoll"></canvas></div>
   <div class="pfCtl">
+    <div class="seekrow"><span id="pfTime" class="pfTime">0:00.0 / 0:00.0</span><input id="pfSeek" type="range" min="0" max="1" step="0.01" value="0" aria-label="再生位置" disabled><span id="pfBarNo" class="barno2"></span></div>
     <div class="pfBtns"><button id="pfRew" class="round sm" aria-label="最初に戻る">⏮</button><button id="pfPrev" class="round sm" aria-label="前の音へ">◀</button><button id="pfPlay" class="round" aria-label="再生／一時停止">▶</button><button id="pfNextBtn" class="round sm" aria-label="次の音へ">▶|</button>
       <select id="pfSpeed" aria-label="再生速度"><option value="0.5">0.5倍</option><option value="0.75">0.75倍</option><option value="1" selected>等速</option><option value="1.25">1.25倍</option><option value="1.5">1.5倍</option></select></div>
     <div class="pfBtns"><label class="chk">横幅<input id="pfZoom" type="range" min="40" max="300" value="110" style="width:90px"></label><label class="chk"><input id="pfCountIn" type="checkbox" checked>1小節カウント</label><label class="chk"><input id="pfFing" type="checkbox">指番号</label><label class="chk"><input id="pfMetro" type="checkbox">メトロノーム</label><label class="chk"><input id="pfSynth" type="checkbox" checked>お手本の音</label></div>
@@ -998,7 +1005,7 @@ function play(){
   const master=c.createGain(); master.gain.value=1; master.connect(c.destination); scheduled.push(master);
   // 演奏モードのカウント（1小節ぶんの拍を鳴らしてから始める）
   const t00=c.currentTime+0.06; let pre=0; S.count=null;
-  if(S.perf&&S.countIn){ const bd=Math.max(0.15,(timeOf(beatOf(startPos)+1)-startPos))/sp, nb=S.song.beatsPerBar; pre=bd*nb; S.count={t0:t00,bd:bd,n:nb};
+  if(S.perf&&S.countIn&&!S.noCount){ const bd=Math.max(0.15,(timeOf(beatOf(startPos)+1)-startPos))/sp, nb=S.song.beatsPerBar; pre=bd*nb; S.count={t0:t00,bd:bd,n:nb};
     for(let k=0;k<nb;k++){ const a=t00+k*bd, o=c.createOscillator(), g=c.createGain(); o.frequency.value=k===0?1760:1175;
       g.gain.setValueAtTime(0.25,a); g.gain.exponentialRampToValueAtTime(0.001,a+0.05); o.connect(g); g.connect(master); o.start(a); o.stop(a+0.06); scheduled.push(o); } }
   startCtx=t00+pre;
@@ -1115,7 +1122,7 @@ function draw(){
   // 再生位置
   g2.fillStyle='#fff'; g2.fillRect(Math.round(ph),top-4,2,H-top+4);
   updateNow(curIdx>=0?notes[curIdx]:null); markSeq(curIdx>=0?notes[curIdx].i:-1); perfDraw(notes);
-  $('time').textContent=fmt(S.pos)+' / '+fmt(songEnd());
+  $('time').textContent=fmt(S.pos)+' / '+fmt(songEnd()); seekSync();
 }
 function rr(x,y,w,h,r){ g2.beginPath(); g2.moveTo(x+r,y); g2.arcTo(x+w,y,x+w,y+h,r); g2.arcTo(x+w,y+h,x,y+h,r); g2.arcTo(x,y+h,x,y,r); g2.arcTo(x,y,x+w,y,r); g2.closePath(); }
 function fmt(t){ t=Math.max(0,t); const m=Math.floor(t/60), s=t-m*60; return m+':'+(s<10?'0':'')+s.toFixed(1); }
@@ -1495,6 +1502,17 @@ function scaleTempo(v){
 }
 $('scaleGo').onclick=()=>{ scaleTempo(+$('bpmNew').value); };
 
+// --- シークバー（編集画面と演奏モードの両方。つまみを動かすと再生位置が動く） ---
+let seeking=null;
+function barNoAt(t){ const s=S.song; if(!s) return ''; const kk=Math.floor(beatOf(t)+1e-6)-(s.barShift||0); return kk<0? '' : (Math.floor(kk/s.beatsPerBar)+1)+'小節'; }
+function seekSync(){ const end=Math.max(0.01,songEnd());
+  for(const id of ['seek','pfSeek']){ const el=$(id); if(el.max!==String(end)) el.max=String(end); if(!seeking) el.value=String(Math.min(end,S.pos)); el.disabled=!S.song||!S.song.notes.length; }
+  $('pfTime').textContent=fmt(S.pos)+' / '+fmt(songEnd()); const bn=S.song&&S.song.notes.length? barNoAt(S.pos):''; $('pfBarNo').textContent=bn; $('barNo').textContent=bn; }
+for(const id of ['seek','pfSeek']){ const el=$(id);
+  el.addEventListener('input',()=>{ if(!S.song) return; if(!seeking){ seeking={was:S.playing}; if(S.playing) stop(); } S.pos=Math.max(0,Math.min(songEnd(),+el.value)); draw(); });
+  const done=()=>{ if(!seeking) return; const was=seeking.was; seeking=null; if(was){ S.noCount=true; try{ play(); }finally{ S.noCount=false; } } else draw(); }; // 再生中のシークでは、カウントを入れ直さずにそのまま続ける
+  el.addEventListener('change',done); el.addEventListener('pointerup',done); el.addEventListener('touchend',done); }
+
 // --- UI同期 ---
 function syncUI(){
   const s=S.song; const has=!!s;
@@ -1588,7 +1606,7 @@ $('minNote').onchange=()=>reana();
 $('prange').onchange=()=>{ if(!S.analysis) return; retrack(S.analysis,$('prange').value); S.grid=null; reana(); };
 function reana(){ if(!S.analysis) return; stop(); resegment(false); if(S.song.mode!=='grid') setStatus(S.song.notes.length+' 個の音を検出しました。'); syncUI(); draw(); };
 $('save').onclick=saveSong;
-function restartIfPlaying(){ if(S.playing){ stop(); play(); } }
+function restartIfPlaying(){ if(S.playing){ stop(); S.noCount=true; try{ play(); }finally{ S.noCount=false; } } }
 window.addEventListener('resize',resize);
 resize(); syncUI(); initStore();
 
