@@ -170,6 +170,8 @@ body.perfing{overflow:hidden}
       <p class="hint" id="recHelp" hidden>Claude の画面の中で開いているこのページでは、マイクの使用が禁止されています。録音機能は、このアプリの HTML ファイルをパソコンのブラウザで直接開くか、HTTPS のサイトに置いて開いたときに使えます。</p>
       <p class="hint">カウントのあと、メトロノームに合わせて歌ってください。止めると、カウントの部分を切り落として、録音の先頭（0.00秒）を1小節目の頭としてそのまま譜面にします。拍子は下の「テンポと表示」の設定を使います。スピーカーで鳴らすとメトロノームの音が録音に入るので、イヤホンで聞くか、「録音中もメトロノームを鳴らす」をオフにしてください。</p>
     </details>
+    <div class="row hlrow"><span class="lbl">音源の種類</span><select id="src"><option value="voice" selected>鼻歌・声</option><option value="inst">楽器（ピアノなど）</option></select></div>
+    <p class="hint">「鼻歌・声」は A5（880Hz）より高い音を検出せず、声の高さの中心から大きく外れた音を選びにくくしています。楽器の録音や動画では「楽器」を選んでください。約2200Hz（C#7付近）まで検出し、音域をしぼりません。先に選んでからファイルを読み込みます（読み込んだあとに変えると、解析し直します）。</p>
     <div class="row"><span class="lbl">音の取り方</span><select id="gmode"><option value="grid" selected>テンポの格子に合わせる（おすすめ）</option><option value="free">自由に取る（テンポ不要）</option></select></div>
     <div class="row" id="unitRow"><span class="lbl">いちばん細かい音</span><select id="unit"><option value="24" selected>24分音符（16分の3連）まで</option><option value="16">16分音符まで</option><option value="8">8分音符まで</option></select></div>
     <div class="row" id="glideRow"><span class="lbl">なめらかな音の動き</span><select id="glide"><option value="trace" selected>16分刻みで再現する</option><option value="merge">まとめる（伸ばした音だけ取る）</option></select></div>
@@ -331,13 +333,15 @@ function downsample(x, sr, target){
 
 // YIN 法による基本周波数推定（フレーム単位）
 // 戻り値: { hop, t0, midi(無声=NaN), rms, ap(非周期性: 小さいほど音程がはっきり), peakAbs }
-async function analyzePitch(x, srIn, onProgress){
+// opt: {fmin, fmax, target}＝検出する高さの下限・上限(Hz)と、解析用に落とすサンプリング周波数。省略時は鼻歌向け（70〜880Hz、16kHz）
+async function analyzePitch(x, srIn, onProgress, opt){
+  opt=opt||{};
   // 低い雑音（空調・風・電源ハム）を落とす 1次ハイパスフィルタ（約70Hz）
   const xh=new Float32Array(x.length), ca=Math.exp(-2*Math.PI*70/srIn);
   let px=0, py=0, peakAbs=0;
   for(let i=0;i<x.length;i++){ py=ca*(py+x[i]-px); px=x[i]; xh[i]=py; const v=Math.abs(x[i]); if(v>peakAbs) peakAbs=v; }
-  const ds=downsample(xh, srIn, 16000); const y=ds.y, sr=ds.sr;
-  const fmin=70, fmax=880;
+  const ds=downsample(xh, srIn, opt.target||16000); const y=ds.y, sr=ds.sr;
+  const fmin=opt.fmin||70, fmax=opt.fmax||880;
   const tauMax=Math.ceil(sr/fmin), tauMin=Math.max(2,Math.floor(sr/fmax));
   const W=Math.round(sr*0.03), hopS=Math.round(sr*0.01);
   const L=W+tauMax+2;
@@ -358,7 +362,13 @@ async function analyzePitch(x, srIn, onProgress){
     const found=[];
     for(let t=tauMin+1; t<tauMax; t++){ if(d[t]<0.6&&d[t]<=d[t-1]&&d[t]<d[t+1]){
         const a=d[t-1], b=d[t], c=d[t+1], den=a+c-2*b; const tb= den>0? t+(a-c)/(2*den) : t; found.push([b, hzToMidi(sr/tb)]); } }
-    found.sort((p,q)=>p[0]-q[0]); const m=Math.min(K,found.length); candN[fi]=m;
+    // 候補の選び方：高い音では「周期の2倍・3倍…」の谷が同じくらい深く何本も並ぶ。深さだけで上位を取ると本来の高さが候補から漏れるので、
+    // いちばん深い谷と同程度（差0.1以内）の谷は高い方（周期が短い方）から先に採り、残りを深さ順で埋める
+    if(found.length>K){ let dm=Infinity; for(const f of found) if(f[0]<dm) dm=f[0];
+      const good=found.filter(f=>f[0]<dm+0.1).sort((p,q)=>q[1]-p[1]).slice(0,4), rest=found.filter(f=>!good.includes(f)).sort((p,q)=>p[0]-q[0]);
+      found.length=0; for(const f of good.concat(rest)) found.push(f); }
+    else found.sort((p,q)=>p[0]-q[0]);
+    const m=Math.min(K,found.length); candN[fi]=m;
     for(let k=0;k<m;k++){ candD[fi*K+k]=found[k][0]; candM[fi*K+k]=found[k][1]; }
     if(onProgress && fi%150===0){ onProgress(fi/nF*0.95); await new Promise(r=>setTimeout(r,0)); }
   }
@@ -376,11 +386,14 @@ function retrack(an, mode){
   const RLO=9.5, RHI=11.5, ROUT=0.3;
   function run(center){
   //    1フレームだけオクターブ上や下に飛ぶ誤りを、前後のつながりで防ぐ。状態 K は「声なし」
-  const UNV=0.42, SW=0.18, JUMP=0.05, JCAP=0.9, LOWB=0.04;
+  const UNV=0.42, SW=0.18, JUMP=0.05, JCAP=0.9, LOWB=0.04, SUBP=0.3;
   const cost=new Float32Array(nF*(K+1)).fill(Infinity), bp=new Int8Array(nF*(K+1)).fill(-1);
   for(let fi=0; fi<nF; fi++){ const m=candN[fi];
     for(let k=0;k<=K;k++){ if(k<K&&k>=m) continue;
-      const em= k===K? UNV : candD[fi*K+k]+LOWB*Math.max(0,(69-candM[fi*K+k])/12)+(center!==null&&(candM[fi*K+k]<center-RLO||candM[fi*K+k]>center+RHI)? ROUT:0); // 低い側（倍周期）の候補にはわずかに不利を付ける
+      let sub=0; // 同じコマに、ちょうど2・3・4・5倍の高さの候補が同じくらいはっきり出ているなら、こちらは「周期の整数倍」を拾った低すぎる候補とみなして不利にする
+      if(k<K){ const mk=candM[fi*K+k], dk=candD[fi*K+k]; for(let j=0;j<m;j++){ if(j===k) continue; const df=candM[fi*K+j]-mk; if(df<11) continue;
+          if((Math.abs(df-12)<0.6||Math.abs(df-19.02)<0.6||Math.abs(df-24)<0.6||Math.abs(df-27.86)<0.6)&&candD[fi*K+j]<dk+0.1){ sub=SUBP; break; } } }
+      const em= k===K? UNV : candD[fi*K+k]+sub+LOWB*Math.max(0,(69-candM[fi*K+k])/12)+(center!==null&&(candM[fi*K+k]<center-RLO||candM[fi*K+k]>center+RHI)? ROUT:0); // 低い側（倍周期）の候補にはわずかに不利を付ける
       if(fi===0){ cost[k]=em; continue; }
       let best=Infinity, bj=-1; const pm=candN[fi-1];
       for(let j=0;j<=K;j++){ if(j<K&&j>=pm) continue; const pc0=cost[(fi-1)*(K+1)+j]; if(!isFinite(pc0)) continue;
@@ -635,7 +648,7 @@ function gridPrep(an, r, opt){
   const V=new Float32Array(n+1); for(let i=0;i<n;i++) V[i+1]=V[i]+(isFinite(x[i])?w[i]:0);
   const NV=new Int32Array(n+1); for(let i=0;i<n;i++) NV[i+1]=NV[i]+(isFinite(x[i])?0:1);
   let first=-1, last=-1; for(let i=0;i<n;i++) if(isFinite(x[i])){ if(first<0) first=i; last=i; }
-  return { n:n, x:x, pmin:pmin, P:P, C:C, V:V, NV:NV, t0:an.t0, hop:an.hop, tFirst:an.t0+first*an.hop, tLast:an.t0+(last+1)*an.hop };
+  return { n:n, x:x, pmin:pmin, P:P, C:C, V:V, NV:NV, rms:an.rms, t0:an.t0, hop:an.hop, tFirst:an.t0+first*an.hop, tLast:an.t0+(last+1)*an.hop };
 }
 function gridTranscribe(G, beatOf, timeOf, opt){
   const unit=opt.unit||24, fr=GRID_FRACS[unit], minLen=GRID_MIN[unit]-1e-6, maxLen=8+1e-6;
@@ -668,6 +681,16 @@ function gridTranscribe(G, beatOf, timeOf, opt){
   const out=[];
   for(const sg of segs){ if(sg.p<0) continue; const L=out[out.length-1];
     if(L&&L.p===sg.p&&Math.abs(L.b-sg.a)<1e-6&&!sg.on) L.b=sg.b; else out.push({a:sg.a,b:sg.b,p:sg.p}); }
+  // 楽器向け：隣の音とつながっていて、ちょうど1オクターブ違いで、隣の半分以下の長さしかない短い音は、
+  // 余韻や打鍵の瞬間に倍音を拾った読み違いとみなして、隣の音にまとめる
+  if(opt.octFix){
+    // 境目に打鍵（音量の急な立ち上がり）がないのにちょうど1オクターブ下・上へ変わる場合は、伸ばしている音の余韻を読み違えたものなので前の音に含める
+    const attack=b=>{ const f=Math.round((timeOf(b)-G.t0)/G.hop); let lo=Infinity, hi=0; for(let i=Math.max(0,f-5);i<=f;i++) if(G.rms[i]<lo) lo=G.rms[i]; for(let i=f;i<=Math.min(G.n-1,f+7);i++) if(G.rms[i]>hi) hi=G.rms[i]; return hi>lo*1.6; };
+    for(let k=1;k<out.length;k++){ const n=out[k], L=out[k-1], dn=L.p-n.p; // 下への読み違いは、周期の2倍・3倍・4倍・5倍（12・19・24・28半音下）で起きる
+      if(Math.abs(L.b-n.a)<1e-6&&(dn===-12||dn===12||dn===19||dn===24||dn===28)&&!attack(n.a)){ L.b=n.b; out.splice(k,1); k--; } }
+    for(let k=0;k<out.length;k++){ const n=out[k], L=out[k-1], R=out[k+1], d=n.b-n.a; if(d>0.5+1e-6) continue;
+      if(L&&Math.abs(L.b-n.a)<1e-6&&Math.abs(n.p-L.p)===12&&d<=0.5*(L.b-L.a)){ L.b=n.b; out.splice(k,1); k--; continue; }
+      if(R&&Math.abs(n.b-R.a)<1e-6&&Math.abs(n.p-R.p)===12&&d<=0.5*(R.b-R.a)){ R.a=n.a; out.splice(k,1); k--; } } }
   const res=out.map(o=>{ const s=timeOf(o.a), e=timeOf(o.b);
     const ia=Math.max(0,Math.round((s-G.t0)/G.hop)), ib=Math.min(G.n,Math.round((e-G.t0)/G.hop)); const vals=[];
     for(let i=ia;i<ib;i++) if(isFinite(G.x[i])) vals.push(G.x[i]);
@@ -835,12 +858,17 @@ async function loadFile(file){
 }
 // 音声データ（ファイルから読んだもの、またはこのアプリで録音したもの）を解析する。preBpm があればテンポ入力を省いてそのまま音を取る
 async function loadBuffer(buf,name,preBpm){
-  try{
+  const myId=S.loadId=(S.loadId||0)+1; // 解析の途中で別の読み込みが始まったら、古い方は結果を捨てる
+  try{ stop();
     S.buffer=buf;
     const ch=buf.numberOfChannels, n=buf.length, x=new Float32Array(n);
     for(let c=0;c<ch;c++){ const d=buf.getChannelData(c); for(let i=0;i<n;i++) x[i]+=d[i]/ch; }
     S.undo=[]; S.grid=null; S.prelim=null; S.needTempo=false;
-    S.analysis=await analyzePitch(x, buf.sampleRate, p=>setStatus('音の高さを解析中… '+Math.round(p*100)+'%'));
+    // 音源の種類：楽器（ピアノなど）は音域が広く高い音まで出るので、検出する高さの上限を約2200Hz（C#7付近）まで広げ、声向けの「高さの範囲をしぼる」処理を切る
+    const inst=$('src').value==='inst'; if(inst) $('prange').value='off';
+    const an=await analyzePitch(x, buf.sampleRate, p=>{ if(S.loadId===myId) setStatus('音の高さを解析中… '+Math.round(p*100)+'%'); }, inst? {fmin:60,fmax:2200,target:24000} : undefined);
+    if(S.loadId!==myId) return;
+    S.inst=inst; S.analysis=an;
     if($('prange').value==='off') retrack(S.analysis,'off');
     const li=levelInfo(S.analysis); S.level=li;
     // 声の大きさと雑音の差（SN比）から感度を自動で選ぶ
@@ -852,6 +880,7 @@ async function loadBuffer(buf,name,preBpm){
     resegment(true);
     S.pos=0; S.sel=-1;
     $('origRow').hidden=false;
+    if(!preBpm&&S.song.mode==='grid'&&S.prelim&&S.prelim.notes.length>=4){ const bb=await suggestTempo(S.prelim,S.song.bpm,()=>S.loadId===myId); if(S.loadId!==myId) return; if(bb) S.song.bpm=bb; }
     const direct=!!preBpm&&S.song.mode==='grid';
     if(preBpm){ S.song.bpm=preBpm; S.song.tempoMode='fixed'; if(direct){ $('phase').value='zero'; $('phaseSec').hidden=true; S.needTempo=false; gridRun(); } else computeTempoKeep(preBpm); }
     const msgs=[ direct? $('status').textContent : S.song.mode==='grid'? '解析しました（'+buf.duration.toFixed(1)+' 秒）。下の「テンポを決める」で曲のテンポを入れてください。' : S.song.notes.length+' 個の音を検出しました（'+buf.duration.toFixed(1)+' 秒）。'];
@@ -876,6 +905,21 @@ function resegment(estimate){
   else if(estimate||S.song.tempoMode==='follow') computeTempo();
   S.sel=-1; S.ver++;
 }
+// テンポの候補を探す：♩=60〜200 を1刻みで試し、音の始まり・終わりが格子（拍・8分・16分…）にいちばんよく乗るテンポを選ぶ。
+// 計算を軽くするため、歌い出しから40秒ぶんだけを使う
+async function suggestTempo(r, base, alive){
+  try{ const an=S.analysis, on=energyOnsets(an,r); let best=null;
+    // 高さの当てはめ表は全テンポで共通にする（テンポによって条件が変わると、遅いテンポほど有利になってしまうため）
+    const G=gridPrep(an,r,{trace:true,sixteenth:0.11}); if(!G) return 0; G.tLast=Math.min(G.tLast,G.tFirst+30);
+    // 細かいテンポほど格子が細かくなって何でも乗りやすくなるので、広くは探さない。音の間隔から出した目安（base）の前後7%だけを1刻みで調べ直す
+    const lo=Math.max(40,Math.round(base*0.93)), hi=Math.min(240,Math.round(base*1.07));
+    for(let bpm=lo;bpm<=hi;bpm++){ const P=60/bpm; let c=Infinity;
+      for(let k=0;k<12;k++){ const o=G.tFirst-k*P/12; const g=gridTranscribe(G,t=>(t-o)/P,b=>o+b*P,{unit:24,onsets:on,trace:true,octFix:!!S.inst}); if(g.cost<c) c=g.cost; }
+            const sc=c;
+      if(!best||sc<best.c) best={bpm:bpm,c:sc};
+      if(bpm%4===0){ if(!alive()) return 0; setStatus('テンポを確かめています…'); await new Promise(r=>setTimeout(r,0)); } }
+    return best? best.bpm : 0; }catch(e){ console.error(e); return 0; }
+}
 // --- テンポの格子に合わせた採譜（録音を読み込んだ直後のみ） ---
 const LAMBDA_OF=[2,5,10]; // こぶし・装飾音：残す／まとめる／強めにまとめる
 function gridRun(){
@@ -883,7 +927,7 @@ function gridRun(){
   const trace=$('glide').value==='trace';
   S.grid=gridPrep(S.analysis,S.prelim,{trace:trace, sixteenth:60/s.bpm/4}); const G=S.grid; if(!G) return false;
   if(s.notes.length) pushUndo();
-  const on=energyOnsets(S.analysis,S.prelim), opt={unit:s.unit||24, lambda:LAMBDA_OF[s.orn==null?1:s.orn], onsets:on, trace:trace};
+  const on=energyOnsets(S.analysis,S.prelim), opt={unit:s.unit||24, lambda:LAMBDA_OF[s.orn==null?1:s.orn], onsets:on, trace:trace, octFix:!!S.inst};
   let res;
   if(s.tempoMode==='fixed'||!s.tempoMode){
     s.beats=null; const P=60/s.bpm;
@@ -1575,6 +1619,7 @@ $('orn').onchange=e=>{ const s=S.song; if(!s) return; s.orn=+e.target.value; S.s
   if(s.mode==='grid'&&S.analysis&&!S.needTempo) gridRun(); syncUI(); restartIfPlaying(); draw(); };
 $('phase').onchange=$('phaseSec').onchange=()=>{ $('phaseSec').hidden=$('phase').value!=='sec'; const s=S.song; if(!s) return;
   if(s.mode==='grid'&&S.analysis&&!S.needTempo){ if(s.tempoMode!=='fixed'){ setStatus('1小節目の頭の指定は、テンポが「一定」のときに使えます。',true); return; } gridRun(); syncUI(); restartIfPlaying(); draw(); } };
+$('src').onchange=()=>{ $('prange').value= $('src').value==='inst'? 'off':'auto'; if(S.buffer&&S.song&&S.analysis) loadBuffer(S.buffer,S.song.name); }; // 種類を変えたら解析し直す
 $('glide').onchange=()=>{ const s=S.song; if(!s) return; if(s.mode==='grid'&&S.analysis&&!S.needTempo){ gridRun(); syncUI(); restartIfPlaying(); draw(); } };
 $('unit').onchange=e=>{ const s=S.song; if(!s) return; s.unit=+e.target.value; if(s.mode==='grid'&&S.analysis&&!S.needTempo) gridRun(); syncUI(); restartIfPlaying(); draw(); };
 $('gmode').onchange=e=>{ const s=S.song; if(!s||!S.analysis) return; s.mode=e.target.value==='free'?'grid_tmp':'grid';
