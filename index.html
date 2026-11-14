@@ -151,6 +151,7 @@ body.perfing{overflow:hidden}
 .pill2 input{width:20px;height:20px}
 .pill2[hidden]{display:none}
 .edonly{display:none}
+.verrow{display:flex;align-items:center;gap:10px;margin:-6px 0 8px} .ver{font-size:12px;color:var(--mut)} .verS{font-size:10px;margin-left:6px}
 .card.fold{padding:0} .card.fold>details>summary{padding:16px 14px;font-size:15px;color:var(--tx);list-style-position:inside} .card.fold>details{padding:0} .card.fold>details[open]{padding:0 14px 14px} .card.fold>details[open]>summary{padding:16px 0}
 /* 編集は全画面で行う */
 body.editfull{overflow:hidden}
@@ -203,6 +204,7 @@ body.editfull .transport{gap:12px} body.editfull .seekrow{margin:8px 0 0}
 <main>
   <h1>鼻歌カラオケバー</h1>
   <p class="sub">鼻歌の録音から音の高さと長さを読み取り、音名つきのバーにして、そのテンポで流します。</p>
+  <div class="verrow"><span class="ver"></span><button id="reloadNew" class="btn" hidden>↻ 最新版を読み込み直す</button></div>
 
   <section class="card">
     <h2>1. 録音を読み込む</h2>
@@ -235,7 +237,7 @@ body.editfull .transport{gap:12px} body.editfull .seekrow{margin:8px 0 0}
   </section>
 
   <section class="card" id="rollCard">
-    <div class="edbar edonly"><b>✏️ 編集</b><span class="sp"></span><button id="zoomOut" class="btn sq" aria-label="横に縮める">－</button><button id="zoomIn" class="btn sq" aria-label="横に広げる">＋</button><button id="undo" class="btn" disabled>↶ 戻す</button><button id="editDone" class="btn pri">完了</button></div>
+    <div class="edbar edonly"><b>✏️ 編集</b><span class="ver verS"></span><span class="sp"></span><button id="zoomOut" class="btn sq" aria-label="横に縮める">－</button><button id="zoomIn" class="btn sq" aria-label="横に広げる">＋</button><button id="undo" class="btn" disabled>↶ 戻す</button><button id="editDone" class="btn pri">完了</button></div>
     <div class="now viewonly"><span id="nowDe">–</span><span id="nowOct"></span><span id="nowEn"></span></div>
     <div class="rollwrap"><canvas id="roll"></canvas></div>
     <div class="legend viewonly"><span><i style="background:#7b6cf6"></i>これから</span><span><i style="background:#ffd166"></i>いまの音</span><span><i style="background:#e0607e"></i>歌い終えた音</span><span><i style="background:rgba(120,200,255,.6);height:2px"></i>実際に歌った音程</span></div>
@@ -1178,12 +1180,13 @@ function draw(){
   if(S.editMode){ maxRows=Math.max(6,Math.floor((H-top)/34));
     if(fullHi-fullLo+1>maxRows){ const tA=S.pos-(ph-lw)/S.pps, tB=S.pos+(W-ph)/S.pps, vis=notes.filter(n=>n.e>tA&&n.s<tB).map(n=>n.p);
       const clampV=v=>Math.min(fullHi,Math.max(fullLo+maxRows-1,v));
-      if(S.vhi==null||(!S.vManual&&!(drag&&drag.moved))){ const c= vis.length? (Math.min(...vis)+Math.max(...vis))/2 : (S.vhi!=null? S.vhi-maxRows/2 : (fullLo+fullHi)/2);
+      if(S.vhi==null||(!S.vManual&&!drag)){ const c= vis.length? (Math.min(...vis)+Math.max(...vis))/2 : (S.vhi!=null? S.vhi-maxRows/2 : (fullLo+fullHi)/2);
         const want=clampV(Math.round(c+maxRows/2));
         // 見えている音がすでに全部入っているなら動かさない（再生中に表示が揺れないように）
         if(S.vhi==null||!vis.length||Math.max(...vis)>S.vhi-1||Math.min(...vis)<S.vhi-maxRows+2) S.vhi=want; }
       // ボタンやドラッグで動かしている最中の音は、必ず表示範囲に入れる
-      if(S.keepSel&&S.sel>=0){ const sn=notes.find(n=>n.i===S.sel); if(sn){ if(sn.p>S.vhi-1) S.vhi=sn.p+1; else if(sn.p<S.vhi-maxRows+2) S.vhi=sn.p+maxRows-2; } }
+      // ボタンで動かした音が表示範囲の外に出たときだけ、その音が端に見える分だけ動かす。指でドラッグしている最中は表示範囲を一切動かさない
+      if(S.keepSel&&S.sel>=0&&!(drag&&drag.note)){ const sn=notes.find(n=>n.i===S.sel); if(sn){ if(sn.p>S.vhi) S.vhi=sn.p; else if(sn.p<S.vhi-maxRows+1) S.vhi=sn.p+maxRows-1; } }
       S.vhi=clampV(S.vhi); hi=S.vhi; lo=hi-maxRows+1;
       above=vis.some(p=>p>hi); below=vis.some(p=>p<lo); }
     else maxRows=fullHi-fullLo+1; }
@@ -1335,7 +1338,7 @@ function settle(ed){
   s.notes=L.filter(n=>!n.dead&&n.e-n.s>0.015).sort((x,y)=>x.s-y.s);
   S.sel=s.notes.indexOf(ed); S.ver++;
 }
-function edit(fn){ const s=S.song; if(!s||S.sel<0||!s.notes[S.sel]) return; pushUndo(); const n=s.notes[S.sel]; const r=fn(n); n.m=true; if(r!==false) settle(n); S.keepSel=true; syncEdit(); restartIfPlaying(); draw(); }
+function edit(fn){ const s=S.song; if(!s||S.sel<0||!s.notes[S.sel]) return; pushUndo(); const n=s.notes[S.sel]; const r=fn(n); n.m=true; if(r!==false) settle(n); S.keepSel=true; S.vManual=true; syncEdit(); restartIfPlaying(); draw(); }
 function setBeats(n,bs,be){ if(be-bs<S.step*0.5) be=bs+S.step; n.s=r3(timeOf(bs)); n.e=r3(timeOf(be)); }
 $('up').onclick=()=>edit(n=>{ n.p++; n.f=n.p; });
 $('down').onclick=()=>edit(n=>{ n.p--; n.f=n.p; });
@@ -1385,10 +1388,11 @@ cv.addEventListener('pointermove',e=>{ if(!drag) return; const dx=e.clientX-drag
   if(!drag.moved) return;
   if(drag.note){ const d=drag.note, s=S.song; s.notes=JSON.parse(d.snap); const n=s.notes[d.idx]; if(!n) return;
     const db=dx/S.pps/((timeOf(d.bs+1)-timeOf(d.bs))||0.5); // 横の移動量を拍に換算
-    if(d.mode==='move'){ const bs=snapB(d.bs+db), len=snapB(d.be)-snapB(d.bs); setBeats(n,bs,bs+Math.max(S.step,len)); n.p=d.p-Math.round(dy/geo.rh); n.f=n.p; }
+    if(d.mode==='move'){ const bs=snapB(d.bs+db), len=snapB(d.be)-snapB(d.bs), tr=s.transpose||0; setBeats(n,bs,bs+Math.max(S.step,len));
+      n.p=Math.max(geo.lo-tr,Math.min(geo.hi-tr,d.p-Math.round(dy/geo.rh))); n.f=n.p; } // 高さは、いま見えている範囲の中だけで動かす（画面は動かさない）
     else if(d.mode==='start'){ const be=snapB(d.be); setBeats(n,Math.min(be-S.step,snapB(d.bs+db)),be); }
     else { const bs=snapB(d.bs); setBeats(n,bs,Math.max(bs+S.step,snapB(d.be+db))); }
-    n.m=true; settle(n); S.keepSel=true; syncEdit(); draw(); return; }
+    n.m=true; settle(n); S.keepSel=false; S.vManual=true; syncEdit(); draw(); return; }
   // 何もない所のドラッグ：横は時間の移動、縦は高さのスクロール（最初に大きく動いた向きで決め、途中で斜めにぶれても向きは変えない）
   if(!drag.axis) drag.axis= (S.editMode&&geo.fullHi-geo.fullLo+1>geo.maxRows&&Math.abs(dy)>Math.abs(dx))? 'v':'h';
   if(drag.axis==='v'){ S.vManual=true; S.keepSel=false; S.vhi=Math.round((drag.vhi0==null?geo.hi:drag.vhi0)+dy/geo.rh); draw(); return; }
@@ -1786,6 +1790,10 @@ $('prange').onchange=()=>{ if(!S.analysis) return; retrack(S.analysis,$('prange'
 function reana(){ if(!S.analysis) return; stop(); resegment(false); if(S.song.mode!=='grid') setStatus(S.song.notes.length+' 個の音を検出しました。'); syncUI(); draw(); };
 $('save').onclick=saveSong;
 function restartIfPlaying(){ if(S.playing){ stop(); S.noCount=true; try{ play(); }finally{ S.noCount=false; } } }
+// 版の表示（どの版を開いているか、画面で確かめられるようにする）と、古い版を覚えたブラウザ向けの読み込み直し
+const BUILD='/*BUILD*/';
+document.querySelectorAll('.ver').forEach(el=>{ el.textContent='版 '+BUILD; });
+if(/^https?:$/.test(location.protocol)&&/github\.io$/.test(location.hostname)){ $('reloadNew').hidden=false; $('reloadNew').onclick=()=>{ location.replace(location.pathname+'?v='+Date.now()); }; }
 window.addEventListener('resize',resize);
 resize(); syncUI(); initStore();
 
