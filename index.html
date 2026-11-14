@@ -166,6 +166,12 @@ body.editfull .transport .round{width:52px;height:52px;font-size:22px} body.edit
 #editBox{position:static;background:none;border:0;padding:0;box-shadow:none}
 #editBox .edhead{align-items:center;margin-bottom:8px} #editBox .edgrid{gap:8px} #editBox .btn{min-height:50px;font-size:14px;padding:6px 2px}
 #addNote.armed{background:var(--hot);color:#2a1d00}
+.edrow{display:flex;align-items:center;gap:8px;min-height:48px}
+.edrow #selName{font-size:22px;color:var(--hot);white-space:nowrap} .edrow #selInfo{flex:1;font-size:13px;color:var(--mut);min-width:0}
+.btn.pri2{background:#3a3270;color:#fff;font-weight:700;white-space:nowrap} .btn.pri2.on{background:var(--acc)}
+#closeEdit[hidden]{display:none}
+#toolsPanel{margin-top:8px}
+body.editfull .transport{gap:12px} body.editfull .seekrow{margin:8px 0 0}
 .shiftbox summary{padding:10px 0}
 #perf .seekrow{margin:4px 0} .pfInfo{display:flex;justify-content:space-between;align-items:center}
 .pfCtl{gap:10px} .pfOpts{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);gap:14px}
@@ -248,23 +254,25 @@ body.editfull .transport .round{width:52px;height:52px;font-size:22px} body.edit
     </div>
     <p class="hint viewonly">バーを左右にドラッグするか、シークバー・「小節」ボタンで位置を動かせます。バーをタップすると、その音の頭に移動します。音を直すときは「編集する」を押してください。</p>
     <div class="edtools edonly">
-      <div id="edNone">
-        <div class="row"><button id="addNote" class="btn big2">＋ 音を追加</button><span class="lbl" style="min-width:0">動かす単位</span><select id="estep"><option value="0.25" selected>16分</option><option value="0.1666666667">24分</option><option value="0.5">8分</option><option value="1">4分</option></select></div>
-        <p class="hint" id="editHint">バーをタップして選ぶと、下に操作ボタンが出ます。選んだバーは、上下にドラッグで高さ、左右にドラッグで位置、端をつまんで長さを変えられます。何もない所を左右にドラッグすると画面が動きます。</p>
-        <details id="shiftBox" class="shiftbox"><summary>まとめて高さを動かす（全体・範囲）</summary>
-          <div class="row"><span class="lbl">譜面全体</span><button id="allDown" class="btn big2" disabled>↓ 1オクターブ</button><button id="allUp" class="btn big2" disabled>↑ 1オクターブ</button></div>
-          <div class="row"><span class="lbl">範囲を選ぶ</span><button id="rngA" class="btn big2" disabled>始点をここに</button><button id="rngB" class="btn big2" disabled>終点をここに</button><button id="rngClear" class="btn big2" disabled>解除</button></div>
-          <div class="row"><span class="lbl">範囲</span><span id="rngInfo" class="hint" style="margin:0;flex:1">まだ選んでいません</span></div>
-          <div class="row"><span class="lbl">範囲の高さ</span><button id="rngDown" class="btn big2" disabled>↓ 1オクターブ</button><button id="rngUp" class="btn big2" disabled>↑ 1オクターブ</button><button id="rngDown1" class="btn big2" disabled>↓ 半音</button><button id="rngUp1" class="btn big2" disabled>↑ 半音</button></div>
-          <p class="hint">範囲は、白い縦線（再生位置）を始めたい所に動かして「始点をここに」、終わらせたい所に動かして「終点をここに」で選びます。黄色の帯が選んだ範囲です。</p>
-        </details>
-      </div>
-      <div id="editBox" hidden>
-        <div class="edhead"><b id="selName"></b><span id="selInfo"></span><button id="closeEdit" class="btn" aria-label="選択を解除">選択を解除</button></div>
-        <div class="edgrid">
-          <button id="up" class="btn">↑ 半音上</button><button id="down" class="btn">↓ 半音下</button><button id="left" class="btn">← 前へ</button><button id="right" class="btn">後ろへ →</button>
-          <button id="startEarlier" class="btn">⇤ 頭を前へ</button><button id="startLater" class="btn">頭を後へ ⇥</button><button id="shorter" class="btn">短く</button><button id="longer" class="btn">長く</button>
-          <button id="split" class="btn">2つに分割</button><button id="join" class="btn">次とつなぐ</button><button id="del" class="btn danger">削除</button><button id="undo2" class="btn">↶ 戻す</button>
+      <div class="edrow"><b id="selName"></b><span id="selInfo">バーをタップして選択</span><button id="closeEdit" class="btn big2" hidden>選択を解除</button><button id="toolsToggle" class="btn big2 pri2">追加・まとめて操作 ▲</button></div>
+      <div id="toolsPanel" hidden>
+        <div id="edNone">
+          <div class="row"><button id="addNote" class="btn big2">＋ 音を追加</button><span class="lbl" style="min-width:0">動かす単位</span><select id="estep"><option value="0.25" selected>16分</option><option value="0.1666666667">24分</option><option value="0.5">8分</option><option value="1">4分</option></select></div>
+          <details id="shiftBox" class="shiftbox"><summary>まとめて高さを動かす（全体・範囲）</summary>
+            <div class="row"><span class="lbl">譜面全体</span><button id="allDown" class="btn big2" disabled>↓ 1オクターブ</button><button id="allUp" class="btn big2" disabled>↑ 1オクターブ</button></div>
+            <div class="row"><span class="lbl">範囲を選ぶ</span><button id="rngA" class="btn big2" disabled>始点をここに</button><button id="rngB" class="btn big2" disabled>終点をここに</button><button id="rngClear" class="btn big2" disabled>解除</button></div>
+            <div class="row"><span class="lbl">範囲</span><span id="rngInfo" class="hint" style="margin:0;flex:1">まだ選んでいません</span></div>
+            <div class="row"><span class="lbl">範囲の高さ</span><button id="rngDown" class="btn big2" disabled>↓ 1オクターブ</button><button id="rngUp" class="btn big2" disabled>↑ 1オクターブ</button><button id="rngDown1" class="btn big2" disabled>↓ 半音</button><button id="rngUp1" class="btn big2" disabled>↑ 半音</button></div>
+            <p class="hint">範囲は、白い縦線（再生位置）を始めたい所に動かして「始点をここに」、終わらせたい所に動かして「終点をここに」で選びます。黄色の帯が選んだ範囲です。</p>
+          </details>
+          <p class="hint" id="editHint">バーをタップすると選べます。選んだバーは、上下にドラッグで高さ、左右にドラッグで位置、端をつまんで長さを変えられます。何もない所は、左右にドラッグで時間、上下にドラッグで高さの表示範囲が動きます。</p>
+        </div>
+        <div id="editBox" hidden>
+          <div class="edgrid">
+            <button id="up" class="btn">↑ 半音上</button><button id="down" class="btn">↓ 半音下</button><button id="left" class="btn">← 前へ</button><button id="right" class="btn">後ろへ →</button>
+            <button id="startEarlier" class="btn">⇤ 頭を前へ</button><button id="startLater" class="btn">頭を後へ ⇥</button><button id="shorter" class="btn">短く</button><button id="longer" class="btn">長く</button>
+            <button id="split" class="btn">2つに分割</button><button id="join" class="btn">次とつなぐ</button><button id="del" class="btn danger">削除</button><button id="undo2" class="btn">↶ 戻す</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1096,6 +1104,7 @@ function play(){
   if(!S.song||!S.song.notes.length) return;
   const c=getCtx(); if(c.resume) c.resume();
   if(S.pos>=songEnd()) S.pos=0;
+  S.vManual=false;
   startPos=S.pos; scheduled=[];
   const sp=S.speed, at=t=>startCtx+(t-startPos)/sp;
   const master=c.createGain(); master.gain.value=1; master.connect(c.destination); scheduled.push(master);
@@ -1163,16 +1172,24 @@ function draw(){
   const lw=46, top=22, ph=lw+(W-lw)*0.28;
   let lo=Math.min(...notes.map(n=>n.p))-2, hi=Math.max(...notes.map(n=>n.p))+2;
   while(hi-lo<11){ lo--; if(hi-lo<11) hi++; }
-  // 編集中は1行を指で押せる高さ（34px以上）に保つ。音域が広くて入りきらないときは、いま見えている音（選択中の音があればその音）の高さを中心に表示する
-  if(S.editMode){ const maxRows=Math.max(8,Math.floor((H-top)/34));
-    if(hi-lo+1>maxRows){ if(!drag||!drag.note){ let c=null; const selN=S.sel>=0? notes.find(n=>n.i===S.sel):null;
-        if(selN) c=selN.p; else { const tA=S.pos-(ph-lw)/S.pps, tB=S.pos+(W-ph)/S.pps, vis=notes.filter(n=>n.e>tA&&n.s<tB).map(n=>n.p); c= vis.length? (Math.min(...vis)+Math.max(...vis))/2 : (lo+hi)/2; }
-        let nh=Math.round(c+maxRows/2); nh=Math.min(hi,Math.max(lo+maxRows-1,nh));
-        if(S.vhi==null||!selN||selN.p>S.vhi-1||selN.p<S.vhi-maxRows+2||Math.abs(nh-S.vhi)>maxRows/3) S.vhi=nh; }
-      const vh=Math.min(hi,Math.max(lo+maxRows-1,S.vhi==null?hi:S.vhi)); hi=vh; lo=vh-maxRows+1; } }
+  // 編集中は1行を指で押せる高さ（34px以上）に保つ。入りきらない高さは上下にドラッグしてスクロールする（S.vhi が表示範囲のいちばん上の音）。
+  // 自分でスクロールするまでは、いま見えている時間帯の音が収まるように自動で合わせる
+  const fullLo=lo, fullHi=hi; let maxRows=hi-lo+1, above=false, below=false;
+  if(S.editMode){ maxRows=Math.max(6,Math.floor((H-top)/34));
+    if(fullHi-fullLo+1>maxRows){ const tA=S.pos-(ph-lw)/S.pps, tB=S.pos+(W-ph)/S.pps, vis=notes.filter(n=>n.e>tA&&n.s<tB).map(n=>n.p);
+      const clampV=v=>Math.min(fullHi,Math.max(fullLo+maxRows-1,v));
+      if(S.vhi==null||(!S.vManual&&!(drag&&drag.moved))){ const c= vis.length? (Math.min(...vis)+Math.max(...vis))/2 : (S.vhi!=null? S.vhi-maxRows/2 : (fullLo+fullHi)/2);
+        const want=clampV(Math.round(c+maxRows/2));
+        // 見えている音がすでに全部入っているなら動かさない（再生中に表示が揺れないように）
+        if(S.vhi==null||!vis.length||Math.max(...vis)>S.vhi-1||Math.min(...vis)<S.vhi-maxRows+2) S.vhi=want; }
+      // ボタンやドラッグで動かしている最中の音は、必ず表示範囲に入れる
+      if(S.keepSel&&S.sel>=0){ const sn=notes.find(n=>n.i===S.sel); if(sn){ if(sn.p>S.vhi-1) S.vhi=sn.p+1; else if(sn.p<S.vhi-maxRows+2) S.vhi=sn.p+maxRows-2; } }
+      S.vhi=clampV(S.vhi); hi=S.vhi; lo=hi-maxRows+1;
+      above=vis.some(p=>p>hi); below=vis.some(p=>p<lo); }
+    else maxRows=fullHi-fullLo+1; }
   const rows=hi-lo+1, rh=(H-top)/rows;
   const X=t=>ph+(t-S.pos)*S.pps, Y=p=>top+(hi-p)*rh;
-  geo={lw,top,ph,lo,hi,rh,X,Y};
+  geo={lw,top,ph,lo,hi,rh,X,Y,fullLo,fullHi,maxRows};
   // 行：調の音階に含まれる音は明るく、主音の行は色付き、音階外は暗く
   const tonic=curKey()%12;
   for(let p=lo;p<=hi;p++){ g2.fillStyle= pc(p)===tonic? '#262038' : inScale(p)? '#1d1a28' : '#0f0d15'; g2.fillRect(lw,Y(p),W-lw,rh);
@@ -1228,6 +1245,11 @@ function draw(){
   g2.textBaseline='alphabetic';
   // 再生位置
   g2.fillStyle='#fff'; g2.fillRect(Math.round(ph),top-4,2,H-top+4);
+  // 表示範囲の外（上・下）に音があるときの目印
+  if(S.editMode&&(above||below)){ g2.font='bold 12px system-ui,sans-serif'; g2.textAlign='right'; g2.fillStyle='#ffd166';
+    if(above) g2.fillText('▲ 上にも音があります',W-8,top+16); if(below) g2.fillText('▼ 下にも音があります',W-8,H-8); g2.textAlign='left'; }
+  if(S.editMode&&fullHi-fullLo+1>maxRows){ // 右端のスクロール位置
+    const th=H-top, bh2=Math.max(24,th*maxRows/(fullHi-fullLo+1)), by=top+(th-bh2)*(fullHi-hi)/Math.max(1,(fullHi-fullLo+1-maxRows)); g2.fillStyle='rgba(255,255,255,.28)'; g2.fillRect(W-5,by,3,bh2); }
   updateNow(curIdx>=0?notes[curIdx]:null); markSeq(curIdx>=0?notes[curIdx].i:-1); perfDraw(notes);
   $('time').textContent=fmt(S.pos)+' / '+fmt(songEnd()); seekSync();
 }
@@ -1313,7 +1335,7 @@ function settle(ed){
   s.notes=L.filter(n=>!n.dead&&n.e-n.s>0.015).sort((x,y)=>x.s-y.s);
   S.sel=s.notes.indexOf(ed); S.ver++;
 }
-function edit(fn){ const s=S.song; if(!s||S.sel<0||!s.notes[S.sel]) return; pushUndo(); const n=s.notes[S.sel]; const r=fn(n); n.m=true; if(r!==false) settle(n); syncEdit(); restartIfPlaying(); draw(); }
+function edit(fn){ const s=S.song; if(!s||S.sel<0||!s.notes[S.sel]) return; pushUndo(); const n=s.notes[S.sel]; const r=fn(n); n.m=true; if(r!==false) settle(n); S.keepSel=true; syncEdit(); restartIfPlaying(); draw(); }
 function setBeats(n,bs,be){ if(be-bs<S.step*0.5) be=bs+S.step; n.s=r3(timeOf(bs)); n.e=r3(timeOf(be)); }
 $('up').onclick=()=>edit(n=>{ n.p++; n.f=n.p; });
 $('down').onclick=()=>edit(n=>{ n.p--; n.f=n.p; });
@@ -1331,12 +1353,17 @@ $('undo').onclick=()=>{ if(!S.undo.length||!S.song) return; const u=JSON.parse(S
 $('undo2').onclick=()=>$('undo').onclick();
 $('closeEdit').onclick=()=>{ S.sel=-1; syncEdit(); draw(); };
 $('estep').onchange=e=>{ S.step=+e.target.value; };
-function syncEdit(){ const box=$('editBox'), ok=S.editMode&&S.sel>=0&&S.song&&S.song.notes[S.sel];
-  box.hidden=!ok; $('edNone').hidden=!!ok; if(!ok) return;
+function syncEdit(){ const ok=!!(S.editMode&&S.sel>=0&&S.song&&S.song.notes[S.sel]);
+  $('editBox').hidden=!ok; $('edNone').hidden=ok; $('closeEdit').hidden=!ok;
+  $('toolsPanel').hidden=!S.toolsOpen;
+  $('toolsToggle').textContent=(ok?'操作ボタン':'追加・まとめて操作')+(S.toolsOpen?' ▼ とじる':' ▲');
+  $('toolsToggle').classList.toggle('on',!!S.toolsOpen);
+  if(!ok){ $('selName').textContent=''; $('selInfo').textContent= S.addArmed? '追加する場所をタップしてください' : 'バーをタップして選択'; return; }
   const n=S.song.notes[S.sel], p=n.p+(S.song.transpose||0);
   $('selName').textContent=deName(p)+octaveOf(p);
   $('selInfo').textContent=(S.fing?'指 '+fingText(p)+'　':'')+lenName(Math.max(1,Math.round((beatOf(n.e)-beatOf(n.s))*12)));
 }
+$('toolsToggle').onclick=()=>{ S.toolsOpen=!S.toolsOpen; syncEdit(); };
 
 // --- キャンバス操作 ---
 // 通常：ドラッグで再生位置を移動、バーをタップでその音の頭へ移動
@@ -1347,7 +1374,7 @@ function hitNote(x,y){ const v=viewNotes(), pad=S.editMode?12:5; let hit=null, b
   return hit; }
 cv.addEventListener('pointerdown',e=>{ if(!S.song||!geo) return; cv.setPointerCapture(e.pointerId);
   const r=cv.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top;
-  drag={x:e.clientX,y:e.clientY,pos:S.pos,moved:false,lx:x,ly:y};
+  drag={x:e.clientX,y:e.clientY,pos:S.pos,moved:false,lx:x,ly:y,vhi0:S.vhi,axis:null};
   if(S.editMode){ const h=hitNote(x,y);
     if(h&&h.v.i===S.sel){ const L=S.song.notes, src=L[h.v.i]; if(!src) return;
       const w=h.x1-h.x0, ez=Math.max(16,Math.min(28,w*0.28)), mode= w>52&&x<h.x0+ez? 'start' : w>52&&x>h.x1-ez? 'end' : 'move';
@@ -1361,7 +1388,10 @@ cv.addEventListener('pointermove',e=>{ if(!drag) return; const dx=e.clientX-drag
     if(d.mode==='move'){ const bs=snapB(d.bs+db), len=snapB(d.be)-snapB(d.bs); setBeats(n,bs,bs+Math.max(S.step,len)); n.p=d.p-Math.round(dy/geo.rh); n.f=n.p; }
     else if(d.mode==='start'){ const be=snapB(d.be); setBeats(n,Math.min(be-S.step,snapB(d.bs+db)),be); }
     else { const bs=snapB(d.bs); setBeats(n,bs,Math.max(bs+S.step,snapB(d.be+db))); }
-    n.m=true; settle(n); syncEdit(); draw(); return; }
+    n.m=true; settle(n); S.keepSel=true; syncEdit(); draw(); return; }
+  // 何もない所のドラッグ：横は時間の移動、縦は高さのスクロール（最初に大きく動いた向きで決め、途中で斜めにぶれても向きは変えない）
+  if(!drag.axis) drag.axis= (S.editMode&&geo.fullHi-geo.fullLo+1>geo.maxRows&&Math.abs(dy)>Math.abs(dx))? 'v':'h';
+  if(drag.axis==='v'){ S.vManual=true; S.keepSel=false; S.vhi=Math.round((drag.vhi0==null?geo.hi:drag.vhi0)+dy/geo.rh); draw(); return; }
   S.pos=Math.max(0,Math.min(songEnd(),drag.pos-dx/S.pps)); draw(); });
 function dragEnd(){ if(!drag) return; const d=drag; drag=null; if(!geo) return;
   if(d.note){ if(d.moved){ S.undo.push(d.note.snap); if(S.undo.length>80) S.undo.shift(); $('undo').disabled=false; $('undo2').disabled=false; } draw(); return; }
@@ -1372,11 +1402,11 @@ function dragEnd(){ if(!drag) return; const d=drag; drag=null; if(!geo) return;
     const t=S.pos+(d.lx-geo.ph)/S.pps, p=Math.round(geo.hi-(d.ly-geo.top)/geo.rh+0.5)-(S.song.transpose||0);
     const bs=Math.floor(beatOf(t)/S.step)*S.step; pushUndo();
     const n={s:0,e:0,p:p,f:p,m:true}; setBeats(n,bs,bs+2*S.step); S.song.notes.push(n); settle(n); armAdd(false); syncEdit(); draw(); return; }
-  S.sel= h? h.v.i : -1; syncEdit(); draw(); }
+  S.sel= h? h.v.i : -1; S.keepSel=false; syncEdit(); draw(); }
 cv.addEventListener('pointerup',dragEnd); cv.addEventListener('pointercancel',()=>{ if(drag&&drag.note&&drag.moved){ dragEnd(); } else drag=null; });
-function armAdd(on){ S.addArmed=on; $('addNote').classList.toggle('armed',on); $('addNote').textContent= on? '追加する場所をタップ（やめる）' : '＋ 音を追加'; }
+function armAdd(on){ S.addArmed=on; $('addNote').classList.toggle('armed',on); $('addNote').textContent= on? '追加をやめる' : '＋ 音を追加'; if(on) S.toolsOpen=false; } // 追加の場所を選ぶあいだは、ボタンをたたんでバーを広く見せる
 $('addNote').onclick=()=>{ S.sel=-1; armAdd(!S.addArmed); syncEdit(); draw(); };
-function setEdit(on){ if(on&&(!S.song||!S.song.notes.length)) return; stop(); S.editMode=on; S.sel=-1; S.vhi=null; armAdd(false); document.body.classList.toggle('editfull',on); syncEdit(); resize(); if(on) window.scrollTo(0,0); }
+function setEdit(on){ if(on&&(!S.song||!S.song.notes.length)) return; stop(); S.editMode=on; S.sel=-1; S.vhi=null; S.vManual=false; S.toolsOpen=false; armAdd(false); document.body.classList.toggle('editfull',on); syncEdit(); resize(); if(on) window.scrollTo(0,0); }
 $('editOpen').onclick=()=>setEdit(true); $('editDone').onclick=()=>setEdit(false);
 $('zoomIn').onclick=()=>{ S.pps=Math.min(300,S.pps*1.3); $('zoom').value=String(S.pps); draw(); };
 $('zoomOut').onclick=()=>{ S.pps=Math.max(40,S.pps/1.3); $('zoom').value=String(S.pps); draw(); };
@@ -1385,7 +1415,7 @@ $('shiftBox').addEventListener('toggle',()=>{ if(S.editMode) setTimeout(resize,0
 // 1小節前・先へ移動（再生中なら、移動先からそのまま続ける）
 function jumpBar(dir){ const s=S.song; if(!s||!s.notes.length) return; const bpb=s.beatsPerBar, sh=s.barShift||0, b=beatOf(S.pos)-sh;
   let k= dir>0? Math.floor(b/bpb+1e-3)+1 : (b-Math.floor(b/bpb+1e-3)*bpb>0.3? Math.floor(b/bpb+1e-3) : Math.floor(b/bpb+1e-3)-1);
-  const t=Math.max(0,Math.min(songEnd(),timeOf(k*bpb+sh))), was=S.playing; stop(); S.pos=t;
+  const t=Math.max(0,Math.min(songEnd(),timeOf(k*bpb+sh))), was=S.playing; stop(); S.pos=t; S.vManual=false;
   if(was&&t<songEnd()){ S.noCount=true; try{ play(); }finally{ S.noCount=false; } } else draw(); }
 $('barPrev').onclick=()=>jumpBar(-1); $('barNext').onclick=()=>jumpBar(1); $('pfBarPrev').onclick=()=>jumpBar(-1); $('pfBarNext').onclick=()=>jumpBar(1);
 
@@ -1655,7 +1685,7 @@ function seekSync(){ const end=Math.max(0.01,songEnd());
   for(const id of ['seek','pfSeek']){ const el=$(id); if(el.max!==String(end)) el.max=String(end); if(!seeking) el.value=String(Math.min(end,S.pos)); el.disabled=!S.song||!S.song.notes.length; }
   $('pfTime').textContent=fmt(S.pos)+' / '+fmt(songEnd()); const bn=S.song&&S.song.notes.length? barNoAt(S.pos):''; $('pfBarNo').textContent=bn; $('barNo').textContent=bn; }
 for(const id of ['seek','pfSeek']){ const el=$(id);
-  el.addEventListener('input',()=>{ if(!S.song) return; if(!seeking){ seeking={was:S.playing}; if(S.playing) stop(); } S.pos=Math.max(0,Math.min(songEnd(),+el.value)); draw(); });
+  el.addEventListener('input',()=>{ if(!S.song) return; S.vManual=false; if(!seeking){ seeking={was:S.playing}; if(S.playing) stop(); } S.pos=Math.max(0,Math.min(songEnd(),+el.value)); draw(); });
   const done=()=>{ if(!seeking) return; const was=seeking.was; seeking=null; if(was){ S.noCount=true; try{ play(); }finally{ S.noCount=false; } } else draw(); }; // 再生中のシークでは、カウントを入れ直さずにそのまま続ける
   el.addEventListener('change',done); el.addEventListener('pointerup',done); el.addEventListener('touchend',done); }
 
