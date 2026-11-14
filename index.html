@@ -76,6 +76,8 @@ textarea{width:100%;height:90px;margin-top:8px;font-size:12px}
 .chip.rest{opacity:.55;cursor:default;border-style:dashed;background:transparent}
 .chip.rest .nm{font-size:16px;color:var(--mut)}
 .chip{position:relative}
+.shiftbox{background:#1f1b2b;border-radius:10px;padding:6px 10px;margin-top:8px}
+.shiftbox .lbl{min-width:4.6em}
 .seekrow{display:flex;align-items:center;gap:8px;margin-top:8px}
 .seekrow input[type=range]{flex:1;width:auto;min-width:0;height:28px;accent-color:var(--hot)}
 .barno2{font-size:12px;color:var(--mut);min-width:3.2em;text-align:right;font-variant-numeric:tabular-nums}
@@ -208,6 +210,13 @@ body.perfing{overflow:hidden}
       <span class="lbl" style="min-width:0">編集の単位</span><select id="estep"><option value="0.25" selected>16分</option><option value="0.1666666667">24分</option><option value="0.5">8分</option><option value="1">4分</option></select>
       <button id="undo" class="btn" disabled>↶ 元に戻す</button></div>
     <p class="hint">バーをタップすると、その音を選んで直せます（画面の下に編集ボタンが出ます）。左右にドラッグすると再生位置が動きます。</p>
+    <div class="shiftbox">
+      <div class="row"><span class="lbl">譜面全体</span><button id="allDown" class="btn" disabled>↓ 1オクターブ下げる</button><button id="allUp" class="btn" disabled>↑ 1オクターブ上げる</button></div>
+      <div class="row"><span class="lbl">範囲を選ぶ</span><button id="rngA" class="btn" disabled>始点をここに</button><button id="rngB" class="btn" disabled>終点をここに</button><button id="rngClear" class="btn" disabled>解除</button></div>
+      <div class="row"><span class="lbl">範囲</span><span id="rngInfo" class="hint" style="margin:0;flex:1">まだ選んでいません</span></div>
+      <div class="row"><span class="lbl">範囲の高さ</span><button id="rngDown" class="btn" disabled>↓ 1オクターブ</button><button id="rngUp" class="btn" disabled>↑ 1オクターブ</button><button id="rngDown1" class="btn" disabled>↓ 半音</button><button id="rngUp1" class="btn" disabled>↑ 半音</button></div>
+      <p class="hint">範囲は、シークバーやバーのドラッグで白い縦線（再生位置）を動かし、始めたい所で「始点をここに」、終わらせたい所で「終点をここに」を押して選びます。始点から終点までに始まる音が対象です。選んだ範囲は黄色の帯で示します。どの操作も「元に戻す」で取り消せます。</p>
+    </div>
     <p class="hint" id="editHint" hidden><b>編集モード中</b>：バーを上下にドラッグで高さ、左右にドラッグで位置を変えます。バーの端をつまむと長さを変えられます。空いている所をタップすると、その高さに音を追加します。どれも「編集の単位」の格子に吸着します。</p>
     <div id="editBox" hidden>
       <div class="edhead"><b id="selName"></b><span id="selInfo"></span><button id="closeEdit" class="x" aria-label="選択を解除">✕</button></div>
@@ -863,7 +872,7 @@ async function loadBuffer(buf,name,preBpm){
     S.buffer=buf;
     const ch=buf.numberOfChannels, n=buf.length, x=new Float32Array(n);
     for(let c=0;c<ch;c++){ const d=buf.getChannelData(c); for(let i=0;i<n;i++) x[i]+=d[i]/ch; }
-    S.undo=[]; S.grid=null; S.prelim=null; S.needTempo=false;
+    S.undo=[]; S.grid=null; S.prelim=null; S.needTempo=false; S.range=null; S.rangeA=null;
     // 音源の種類：楽器（ピアノなど）は音域が広く高い音まで出るので、検出する高さの上限を約2200Hz（C#7付近）まで広げ、声向けの「高さの範囲をしぼる」処理を切る
     const inst=$('src').value==='inst'; if(inst) $('prange').value='off';
     const an=await analyzePitch(x, buf.sampleRate, p=>{ if(S.loadId===myId) setStatus('音の高さを解析中… '+Math.round(p*100)+'%'); }, inst? {fmin:60,fmax:2200,target:24000} : undefined);
@@ -1127,6 +1136,10 @@ function draw(){
     g2.fillStyle=bar?'rgba(255,255,255,.22)':'rgba(255,255,255,.07)'; g2.fillRect(Math.round(x),top,1,H-top);
     if(bar&&kk>=0){ g2.fillStyle='#8a86a0'; g2.fillText(String(Math.floor(kk/s.beatsPerBar)+1),x+3,14); }
   }
+  // 選んだ範囲（オクターブ上げ下げの対象）
+  if(S.range){ const xa=Math.max(lw,X(S.range.a)), xb=Math.min(W,X(S.range.b));
+    if(xb>lw&&xa<W){ g2.fillStyle='rgba(255,209,102,.13)'; g2.fillRect(xa,top,Math.max(0,xb-xa),H-top); g2.fillStyle='#ffd166';
+      if(X(S.range.a)>=lw) g2.fillRect(Math.round(X(S.range.a)),top,2,H-top); if(X(S.range.b)<=W) g2.fillRect(Math.round(X(S.range.b))-2,top,2,H-top); } }
   // 音符バー
   let curIdx=-1; const labels=[];
   notes.forEach((n,i)=>{
@@ -1152,7 +1165,7 @@ function draw(){
     g2.strokeStyle='rgba(120,200,255,.75)'; g2.lineWidth=1.5; g2.beginPath(); let pen=false;
     const i0=Math.max(0,Math.floor((t0-s.t0)/s.hop)), i1=Math.min(s.curve.length-1,Math.ceil((t1-s.t0)/s.hop));
     for(let i=i0;i<=i1;i++){ const v=s.curve[i]; if(!v){ pen=false; continue; }
-      const x=X(s.t0+i*s.hop), y=Y(v/10+(s.transpose||0))+rh/2; if(pen) g2.lineTo(x,y); else { g2.moveTo(x,y); pen=true; } }
+      const x=X(s.t0+i*s.hop), y=Y(v/10+(s.transpose||0)+(s.cshift||0))+rh/2; if(pen) g2.lineTo(x,y); else { g2.moveTo(x,y); pen=true; } }
     g2.stroke();
   }
   labels.forEach(f=>f()); // 音名は線より手前に描く
@@ -1240,7 +1253,7 @@ function seqText(){
 // --- 音符の編集 ---
 // 編集は元の音符（S.song.notes）に対して行い、手で直した音には m（手直し済み）の印を付ける
 S.undo=[]; S.editMode=false; S.step=0.25;
-function pushUndo(){ if(!S.song) return; S.undo.push(JSON.stringify(S.song.notes)); if(S.undo.length>80) S.undo.shift(); $('undo').disabled=false; $('undo2').disabled=false; }
+function pushUndo(){ if(!S.song) return; S.undo.push(JSON.stringify({n:S.song.notes,c:S.song.cshift||0})); if(S.undo.length>80) S.undo.shift(); $('undo').disabled=false; $('undo2').disabled=false; }
 function snapB(b){ return Math.round(b/S.step)*S.step; }
 // 編集した音を優先して、重なった前後の音を削る
 function settle(ed){
@@ -1264,7 +1277,7 @@ $('split').onclick=()=>edit(n=>{ const bs=beatOf(n.s), be=beatOf(n.e); let m=sna
   const nn={s:r3(timeOf(m)),e:n.e,p:n.p,f:n.f,m:true}; n.e=nn.s; S.song.notes.push(nn); S.song.notes.sort((x,y)=>x.s-y.s); S.ver++; return false; });
 $('join').onclick=()=>edit(n=>{ const L=S.song.notes, k=L.indexOf(n), nx=L[k+1]; if(!nx){ setStatus('つなげる次の音がありません。',true); return false; } n.e=nx.e; L.splice(k+1,1); S.ver++; return false; });
 $('del').onclick=()=>{ if(S.sel<0) return; pushUndo(); S.song.notes.splice(S.sel,1); S.sel=-1; S.ver++; syncEdit(); restartIfPlaying(); draw(); };
-$('undo').onclick=()=>{ if(!S.undo.length||!S.song) return; S.song.notes=JSON.parse(S.undo.pop()); if(S.sel>=S.song.notes.length) S.sel=-1; S.ver++; $('undo').disabled=!S.undo.length; $('undo2').disabled=!S.undo.length; syncEdit(); restartIfPlaying(); draw(); };
+$('undo').onclick=()=>{ if(!S.undo.length||!S.song) return; const u=JSON.parse(S.undo.pop()); if(Array.isArray(u)) S.song.notes=u; else { S.song.notes=u.n; S.song.cshift=u.c; } if(S.sel>=S.song.notes.length) S.sel=-1; S.ver++; $('undo').disabled=!S.undo.length; $('undo2').disabled=!S.undo.length; syncEdit(); restartIfPlaying(); draw(); };
 $('undo2').onclick=()=>$('undo').onclick();
 $('closeEdit').onclick=()=>{ S.sel=-1; syncEdit(); draw(); };
 $('estep').onchange=e=>{ S.step=+e.target.value; };
@@ -1334,11 +1347,11 @@ function packSong(){
   const s=S.song;
   return { id:s.id, name:s.name, createdAt:s.createdAt||Date.now(), updatedAt:Date.now(), bpm:s.bpm, beatOffset:r3(s.beatOffset),
     beatsPerBar:s.beatsPerBar, quantize:!!s.quantize, key:s.key==null?'auto':s.key, transpose:s.transpose||0, tidyShort:s.tidyShort||0, tidyGap:!!s.tidyGap, tuningCents:s.tuningCents||0, hop:s.hop, t0:r3(s.t0||0),
-    curve:(s.curve||[]).slice(0,30000), notes:s.notes.map(n=>[r3(n.s),r3(n.e),n.p,n.f==null?n.p:Math.round(n.f*100)/100,n.m?1:0]), mode:s.mode||'free', unit:s.unit||24, barShift:s.barShift||0, tempoMode:s.tempoMode||'fixed', beats:s.beats? s.beats.map(r3):null, orn:s.orn==null?1:s.orn, snap:s.snap||'none', keyHint:s.keyHint==null?null:s.keyHint, driftCents:s.driftCents||0 };
+    curve:(s.curve||[]).slice(0,30000), cshift:s.cshift||0, notes:s.notes.map(n=>[r3(n.s),r3(n.e),n.p,n.f==null?n.p:Math.round(n.f*100)/100,n.m?1:0]), mode:s.mode||'free', unit:s.unit||24, barShift:s.barShift||0, tempoMode:s.tempoMode||'fixed', beats:s.beats? s.beats.map(r3):null, orn:s.orn==null?1:s.orn, snap:s.snap||'none', keyHint:s.keyHint==null?null:s.keyHint, driftCents:s.driftCents||0 };
 }
 function unpackSong(d){
   return { id:d.id, name:d.name||'無題', createdAt:d.createdAt, bpm:+d.bpm||100, beatOffset:+d.beatOffset||0, beatsPerBar:+d.beatsPerBar||4,
-    quantize:!!d.quantize, key:(d.key==null?'auto':d.key), transpose:+d.transpose||0, tidyShort:d.tidyShort==null?2:+d.tidyShort, tidyGap:d.tidyGap==null?true:!!d.tidyGap, tuningCents:d.tuningCents||0, hop:+d.hop||0.01, t0:+d.t0||0, curve:Array.isArray(d.curve)?d.curve:[],
+    quantize:!!d.quantize, key:(d.key==null?'auto':d.key), transpose:+d.transpose||0, tidyShort:d.tidyShort==null?2:+d.tidyShort, tidyGap:d.tidyGap==null?true:!!d.tidyGap, tuningCents:d.tuningCents||0, hop:+d.hop||0.01, t0:+d.t0||0, curve:Array.isArray(d.curve)?d.curve:[], cshift:+d.cshift||0,
     mode:d.mode||'free', unit:+d.unit||24, barShift:+d.barShift||0, tempoMode:d.tempoMode||'fixed', beats:Array.isArray(d.beats)&&d.beats.length>=2? d.beats.map(Number):null, orn:d.orn==null?1:+d.orn, snap:d.snap||'none', keyHint:(d.keyHint==null?null:+d.keyHint), driftCents:+d.driftCents||0,
     notes:(d.notes||[]).map(a=>Array.isArray(a)?{s:+a[0],e:+a[1],p:+a[2],f:(a[3]==null?+a[2]:+a[3]),m:!!a[4]}:{s:+a.s,e:+a.e,p:+a.p,f:(a.f==null?+a.p:+a.f)}).filter(n=>isFinite(n.s)&&isFinite(n.e)&&isFinite(n.p)) };
 }
@@ -1398,7 +1411,7 @@ async function saveToFile(){
     setStatus('「'+fname+'」をダウンロードしました。'); }
   catch(e){ $('exportBox').open=true; $('json').value=text; setStatus('ファイルに保存できませんでした。「データの書き出し・読み込み」の欄の文字列をコピーして保存してください。',true); }
 }
-function openScoreText(text){
+function openScoreText(text){ S.range=null; S.rangeA=null;
   let d; try{ d=JSON.parse(text); }catch(e){ setStatus('譜面ファイルとして読めませんでした。',true); return false; }
   if(!d||!Array.isArray(d.notes)){ setStatus('譜面ファイルの形式が正しくありません。',true); return false; }
   stop(); S.song=unpackSong(d); S.ver++; S.undo=[]; S.needTempo=false; S.prelim=null; S.grid=null; S.analysis=null; S.buffer=null; S.song.id=null; S.pos=0; S.sel=-1; S.orig=false; $('orig').checked=false; $('origRow').hidden=true;
@@ -1540,11 +1553,37 @@ function scaleTempo(v){
   s.beatOffset=r4(s.beatOffset*f); s.hop*=f; s.t0*=f; s.tscale=(s.tscale||1)*f; S.pos*=f;
   const old=s.bpm; s.bpm=v;
   // 時間軸が録音とずれるので、録音からの取り直しはここで終わりにする
-  S.analysis=null; S.prelim=null; S.grid=null; S.needTempo=false; S.undo=[]; S.sel=-1; S.ver++;
+  S.analysis=null; S.prelim=null; S.grid=null; S.needTempo=false; S.undo=[]; S.sel=-1; S.ver++; if(S.range){ S.range={a:S.range.a*f,b:S.range.b*f}; }
   setStatus('譜面のテンポを ♩='+old+' から ♩='+v+' に変えました（音の並びと長さはそのままです）。');
   syncUI(); draw(); return true;
 }
 $('scaleGo').onclick=()=>{ scaleTempo(+$('bpmNew').value); };
+
+// --- 高さをまとめて動かす（譜面全体／選んだ範囲） ---
+S.range=null;
+function posLabel(t){ const s=S.song, b=beatOf(t)-(s.barShift||0), bar=Math.floor(b/s.beatsPerBar+1e-6); return (b<0?'':(bar+1)+'小節'+(Math.floor(b-bar*s.beatsPerBar+1e-6)+1)+'拍目・')+fmt(t); }
+function rangeSync(){ const s=S.song, has=!!s&&s.notes.length>0, r=S.range;
+  for(const id of ['allUp','allDown','rngA','rngB']) $(id).disabled=!has;
+  for(const id of ['rngUp','rngDown','rngUp1','rngDown1','rngClear']) $(id).disabled=!has||!r;
+  let t='まだ選んでいません';
+  if(has&&r){ const n=s.notes.filter(x=>x.s>=r.a-1e-3&&x.s<r.b-1e-3).length; t=posLabel(r.a)+' 〜 '+posLabel(r.b)+'（'+n+' 音）'; }
+  else if(has&&S.rangeA!=null) t='始点 '+posLabel(S.rangeA)+'。次に、終点にしたい位置へ動かして「終点をここに」を押してください';
+  $('rngInfo').textContent=t; }
+function shiftNotes(d, r){ const s=S.song; if(!s||!s.notes.length) return;
+  const tg= r? s.notes.filter(x=>x.s>=r.a-1e-3&&x.s<r.b-1e-3) : s.notes;
+  if(!tg.length){ setStatus('その範囲に音がありません。',true); return; }
+  pushUndo(); for(const n of tg){ n.p+=d; if(n.f!=null) n.f+=d; }
+  if(!r) s.cshift=(s.cshift||0)+d; // 全体を動かすときは、歌った音程の線も一緒に動かす
+  S.ver++; lastNow=''; pfKey='';
+  const w=Math.abs(d)===12? '1オクターブ' : Math.abs(d)+'半音';
+  setStatus((r?'選んだ範囲の ':'譜面全体の ')+tg.length+' 音を'+w+(d>0?'上げ':'下げ')+'ました。'); syncUI(); restartIfPlaying(); draw(); }
+$('allUp').onclick=()=>shiftNotes(12,null); $('allDown').onclick=()=>shiftNotes(-12,null);
+$('rngUp').onclick=()=>shiftNotes(12,S.range); $('rngDown').onclick=()=>shiftNotes(-12,S.range);
+$('rngUp1').onclick=()=>shiftNotes(1,S.range); $('rngDown1').onclick=()=>shiftNotes(-1,S.range);
+$('rngA').onclick=()=>{ if(!S.song) return; S.rangeA=S.pos; if(S.range){ if(S.pos<S.range.b-0.02) S.range={a:S.pos,b:S.range.b}; else S.range=null; } rangeSync(); draw(); };
+$('rngB').onclick=()=>{ if(!S.song) return; const a= S.range? S.range.a : S.rangeA; if(a==null){ setStatus('先に「始点をここに」を押してください。',true); return; }
+  if(S.pos<=a+0.02){ setStatus('終点は始点より後ろにしてください。',true); return; } S.range={a:a,b:S.pos}; rangeSync(); draw(); };
+$('rngClear').onclick=()=>{ S.range=null; S.rangeA=null; rangeSync(); draw(); };
 
 // --- シークバー（編集画面と演奏モードの両方。つまみを動かすと再生位置が動く） ---
 let seeking=null;
@@ -1577,6 +1616,7 @@ function syncUI(){
   $('ornHint').textContent= grid? '格子に合わせて取る場合は、区切りを増やすことへの減点の大きさが変わります（大きいほど、1音の中の上がり下がりを独立した音にしにくくなります）。' : '主音の前後に一瞬だけ付く短い音（0.12秒以下、「強めに」は0.2秒以下）を主音にまとめます。';
   $('fileSave').disabled=!has||!s.notes.length;
   for(const id of ['barShift','undo','perfOpen','bpmNew','scaleGo']) $(id).disabled=!has||!s.notes.length; if(has&&document.activeElement!==$('bpmNew')) $('bpmNew').value=s.bpm; if(has) $('undo').disabled=!S.undo.length;
+  rangeSync();
   syncEdit();
 }
 $('file').onchange=async e=>{ const f=e.target.files&&e.target.files[0]; e.target.value=''; if(!f) return;
