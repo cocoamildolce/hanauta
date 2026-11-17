@@ -171,6 +171,17 @@ body.editfull .transport .round{width:52px;height:52px;font-size:22px} body.edit
 .edrow #selName{font-size:22px;color:var(--hot);white-space:nowrap} .edrow #selInfo{flex:1;font-size:13px;color:var(--mut);min-width:0}
 .btn.pri2{background:#3a3270;color:#fff;font-weight:700;white-space:nowrap} .btn.pri2.on{background:var(--acc)}
 #closeEdit[hidden]{display:none}
+.edbar .ver{display:none} .edbar b,.edbar .btn{white-space:nowrap} .edbar .btn{padding:6px 12px}
+#rangePanel{background:#2a2340;border:1px solid rgba(255,209,102,.45);border-radius:12px;padding:6px 8px;margin-bottom:6px}
+#rangePanel[hidden]{display:none}
+.rgrow{display:flex;align-items:center;gap:6px;margin:4px 0}
+.rgrow .btn{flex:1;min-width:0;padding:8px 4px}
+.rgrow select{flex:1.3;min-width:0;min-height:46px;font-size:14px}
+.rgtag{background:#ffd166;color:#2a1d00;font-weight:800;font-size:12px;border-radius:6px;padding:2px 6px;flex:none}
+#rngInfo{flex:1;font-size:13px;min-width:0}
+#rngClear{flex:none;padding:8px 14px}
+#rngMsg{font-size:12px;color:#b9f0c8;min-height:0}
+#rngMsg:empty{display:none}
 #toolsPanel{margin-top:8px}
 body.editfull .transport{gap:12px} body.editfull .seekrow{margin:8px 0 0}
 .shiftbox summary{padding:10px 0}
@@ -256,18 +267,19 @@ body.editfull .transport{gap:12px} body.editfull .seekrow{margin:8px 0 0}
     </div>
     <p class="hint viewonly">バーを左右にドラッグするか、シークバー・「小節」ボタンで位置を動かせます。バーをタップすると、その音の頭に移動します。音を直すときは「編集する」を押してください。</p>
     <div class="edtools edonly">
+      <div id="rangePanel" hidden>
+        <div class="rgrow"><span class="rgtag">範囲</span><span id="rngInfo"></span><button id="rngClear" class="btn big2">解除</button></div>
+        <div class="rgrow"><button id="rngDown" class="btn big2">オク↓</button><button id="rngUp" class="btn big2">オク↑</button><select id="rngTr" aria-label="移調する幅"><option value="12">＋12 半音</option><option value="11">＋11 半音</option><option value="10">＋10 半音</option><option value="9">＋9 半音</option><option value="8">＋8 半音</option><option value="7">＋7 半音</option><option value="6">＋6 半音</option><option value="5">＋5 半音</option><option value="4">＋4 半音</option><option value="3">＋3 半音</option><option value="2">＋2 半音</option><option value="1" selected>＋1 半音</option><option value="-1">－1 半音</option><option value="-2">－2 半音</option><option value="-3">－3 半音</option><option value="-4">－4 半音</option><option value="-5">－5 半音</option><option value="-6">－6 半音</option><option value="-7">－7 半音</option><option value="-8">－8 半音</option><option value="-9">－9 半音</option><option value="-10">－10 半音</option><option value="-11">－11 半音</option><option value="-12">－12 半音</option></select><button id="rngGo" class="btn big2 pri2">移調</button></div>
+        <div id="rngMsg"></div>
+      </div>
       <div class="edrow"><b id="selName"></b><span id="selInfo">バーをタップして選択</span><button id="closeEdit" class="btn big2" hidden>選択を解除</button><button id="toolsToggle" class="btn big2 pri2">追加・まとめて操作 ▲</button></div>
       <div id="toolsPanel" hidden>
         <div id="edNone">
           <div class="row"><button id="addNote" class="btn big2">＋ 音を追加</button><span class="lbl" style="min-width:0">動かす単位</span><select id="estep"><option value="0.25" selected>16分</option><option value="0.1666666667">24分</option><option value="0.5">8分</option><option value="1">4分</option></select></div>
-          <details id="shiftBox" class="shiftbox"><summary>まとめて高さを動かす（全体・範囲）</summary>
+          <details id="shiftBox" class="shiftbox"><summary>譜面全体の高さを動かす</summary>
             <div class="row"><span class="lbl">譜面全体</span><button id="allDown" class="btn big2" disabled>↓ 1オクターブ</button><button id="allUp" class="btn big2" disabled>↑ 1オクターブ</button></div>
-            <div class="row"><span class="lbl">範囲を選ぶ</span><button id="rngA" class="btn big2" disabled>始点をここに</button><button id="rngB" class="btn big2" disabled>終点をここに</button><button id="rngClear" class="btn big2" disabled>解除</button></div>
-            <div class="row"><span class="lbl">範囲</span><span id="rngInfo" class="hint" style="margin:0;flex:1">まだ選んでいません</span></div>
-            <div class="row"><span class="lbl">範囲の高さ</span><button id="rngDown" class="btn big2" disabled>↓ 1オクターブ</button><button id="rngUp" class="btn big2" disabled>↑ 1オクターブ</button><button id="rngDown1" class="btn big2" disabled>↓ 半音</button><button id="rngUp1" class="btn big2" disabled>↑ 半音</button></div>
-            <p class="hint">範囲は、白い縦線（再生位置）を始めたい所に動かして「始点をここに」、終わらせたい所に動かして「終点をここに」で選びます。黄色の帯が選んだ範囲です。</p>
           </details>
-          <p class="hint" id="editHint">バーをタップすると選べます。選んだバーは、上下にドラッグで高さ、左右にドラッグで位置、端をつまんで長さを変えられます。何もない所は、左右にドラッグで時間、上下にドラッグで高さの表示範囲が動きます。</p>
+          <p class="hint" id="editHint">バーをタップすると選べます。選んだバーは、上下にドラッグで高さ、左右にドラッグで位置、端をつまんで長さを変えられます。何もない所は、左右にドラッグで時間、上下にドラッグで高さの表示範囲が動きます。<br>いちばん上の「範囲」のバーを指でなぞると、その区間を範囲として選べます。範囲の両端の丸いつまみをドラッグすると、端だけを動かせます。指を左右の端まで持っていくと、画面を送りながら範囲を伸ばせます。選んだ範囲は、出てくるボタンでオクターブ単位や半音単位で移調できます。</p>
         </div>
         <div id="editBox" hidden>
           <div class="edgrid">
@@ -1171,7 +1183,7 @@ function draw(){
   syncSeq(notes);
   if(!s||!notes.length){ g2.fillStyle='#8a86a0'; g2.font='14px system-ui,sans-serif'; g2.textAlign='center';
     g2.fillText('録音ファイルを読み込むか、保存した曲を開いてください',W/2,H/2); updateNow(null); return; }
-  const lw=46, top=22, ph=lw+(W-lw)*0.28;
+  const lw=46, top= S.editMode? 44 : 22, ph=lw+(W-lw)*0.28; // 編集中は上端（y=4〜38）を範囲選択バーにする
   let lo=Math.min(...notes.map(n=>n.p))-2, hi=Math.max(...notes.map(n=>n.p))+2;
   while(hi-lo<11){ lo--; if(hi-lo<11) hi++; }
   // 編集中は1行を指で押せる高さ（34px以上）に保つ。入りきらない高さは上下にドラッグしてスクロールする（S.vhi が表示範囲のいちばん上の音）。
@@ -1197,6 +1209,8 @@ function draw(){
   const tonic=curKey()%12;
   for(let p=lo;p<=hi;p++){ g2.fillStyle= pc(p)===tonic? '#262038' : inScale(p)? '#1d1a28' : '#0f0d15'; g2.fillRect(lw,Y(p),W-lw,rh);
     g2.fillStyle='rgba(255,255,255,.04)'; g2.fillRect(lw,Y(p)+rh-1,W-lw,1); }
+  // 範囲選択バーの下地
+  if(S.editMode){ g2.fillStyle='#262041'; rr(lw+2,4,W-lw-6,34,9); g2.fill(); g2.strokeStyle='rgba(255,209,102,.35)'; g2.lineWidth=1; rr(lw+2.5,4.5,W-lw-7,33,9); g2.stroke(); }
   // 拍・小節線
   const t0=S.pos-(ph-lw)/S.pps, t1=S.pos+(W-ph)/S.pps;
   g2.font='10px system-ui,sans-serif'; g2.textAlign='left';
@@ -1204,12 +1218,23 @@ function draw(){
     const kk=k-(s.barShift||0), x=X(timeOf(k)), bar=((kk%s.beatsPerBar)+s.beatsPerBar)%s.beatsPerBar===0;
     if(x<lw) continue;
     g2.fillStyle=bar?'rgba(255,255,255,.22)':'rgba(255,255,255,.07)'; g2.fillRect(Math.round(x),top,1,H-top);
-    if(bar&&kk>=0){ g2.fillStyle='#8a86a0'; g2.fillText(String(Math.floor(kk/s.beatsPerBar)+1),x+3,14); }
+    if(bar&&kk>=0){ g2.fillStyle= S.editMode? '#b9b4d0':'#8a86a0'; g2.fillText(String(Math.floor(kk/s.beatsPerBar)+1),x+3,S.editMode?17:14); }
+    if(S.editMode&&x>lw+3&&x<W-5){ g2.fillStyle= bar?'rgba(255,255,255,.35)':'rgba(255,255,255,.12)'; g2.fillRect(Math.round(x), bar?6:24, 1, bar?30:12); } // バーの中の目盛り
   }
   // 選んだ範囲（オクターブ上げ下げの対象）
   if(S.range){ const xa=Math.max(lw,X(S.range.a)), xb=Math.min(W,X(S.range.b));
     if(xb>lw&&xa<W){ g2.fillStyle='rgba(255,209,102,.13)'; g2.fillRect(xa,top,Math.max(0,xb-xa),H-top); g2.fillStyle='#ffd166';
       if(X(S.range.a)>=lw) g2.fillRect(Math.round(X(S.range.a)),top,2,H-top); if(X(S.range.b)<=W) g2.fillRect(Math.round(X(S.range.b))-2,top,2,H-top); } }
+  if(S.editMode){
+    if(S.range){ const xa=Math.max(lw+2,X(S.range.a)), xb=Math.min(W-4,X(S.range.b));
+      if(xb>xa){ g2.fillStyle='rgba(255,209,102,.5)'; rr(xa,4,xb-xa,34,7); g2.fill(); }
+      g2.fillStyle='#ffd166'; g2.font='bold 12px system-ui,sans-serif';
+      if(X(S.range.b)<lw){ g2.textAlign='left'; g2.fillText('◀ 範囲',lw+8,26); }          // 範囲が左の画面外
+      else if(X(S.range.a)>W){ g2.textAlign='right'; g2.fillText('範囲 ▶',W-10,26); }    // 範囲が右の画面外
+      for(const t of [S.range.a,S.range.b]){ const x=X(t); if(x<lw||x>W) continue;      // 端のつまみ（ドラッグで動かせる）
+        g2.fillStyle='#ffd166'; g2.beginPath(); g2.arc(x,21,10,0,Math.PI*2); g2.fill(); g2.fillStyle='#2a1d00'; g2.fillRect(x-3,16,2,10); g2.fillRect(x+1,16,2,10); }
+      g2.textAlign='left'; }
+    else { g2.fillStyle='rgba(255,255,255,.55)'; g2.font='12px system-ui,sans-serif'; g2.textAlign='center'; g2.fillText('↔ ここを指でなぞって範囲を選ぶ',lw+(W-lw)/2,26); g2.textAlign='left'; } }
   // 音符バー
   let curIdx=-1; const labels=[];
   notes.forEach((n,i)=>{
@@ -1246,6 +1271,7 @@ function draw(){
     g2.fillStyle=act?'#ffd166':(inScale(p)?(pc(p)===tonic?'#c9b8ff':'#d6d2ea'):'#55516a');
     if(rh>=9||pc(p)===tonic) g2.fillText(deName(p)+octaveOf(p),lw-6,Y(p)+rh/2); }
   g2.textBaseline='alphabetic';
+  if(S.editMode){ g2.fillStyle='#0d0b13'; g2.fillRect(0,0,lw,top); g2.fillStyle='#ffd166'; g2.font='bold 12px system-ui,sans-serif'; g2.textAlign='center'; g2.fillText('範囲',lw/2,26); g2.textAlign='left'; }
   // 再生位置
   g2.fillStyle='#fff'; g2.fillRect(Math.round(ph),top-4,2,H-top+4);
   // 表示範囲の外（上・下）に音があるときの目印
@@ -1378,12 +1404,17 @@ function hitNote(x,y){ const v=viewNotes(), pad=S.editMode?12:5; let hit=null, b
 cv.addEventListener('pointerdown',e=>{ if(!S.song||!geo) return; cv.setPointerCapture(e.pointerId);
   const r=cv.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top;
   drag={x:e.clientX,y:e.clientY,pos:S.pos,moved:false,lx:x,ly:y,vhi0:S.vhi,axis:null};
+  if(S.editMode&&y<geo.top-2){ // 範囲選択バー：なぞった区間を範囲にする。既にある範囲の端（つまみ）を触ったときは、その端だけ動かす
+    if(S.playing) stop(); const r0=S.range; let mode='new';
+    if(r0){ const xa=geo.X(r0.a), xb=geo.X(r0.b); if(Math.abs(x-xb)<=22) mode='b'; else if(Math.abs(x-xa)<=22) mode='a'; }
+    drag.range={mode:mode, anchor:snapT(tAt(x)), lastX:x, timer:setInterval(rangeAuto,50)}; return; }
   if(S.editMode){ const h=hitNote(x,y);
     if(h&&h.v.i===S.sel){ const L=S.song.notes, src=L[h.v.i]; if(!src) return;
       const w=h.x1-h.x0, ez=Math.max(16,Math.min(28,w*0.28)), mode= w>52&&x<h.x0+ez? 'start' : w>52&&x>h.x1-ez? 'end' : 'move';
       drag.note={mode:mode, idx:h.v.i, snap:JSON.stringify(L), bs:beatOf(src.s), be:beatOf(src.e), p:src.p};
       if(S.playing) stop(); } } });
 cv.addEventListener('pointermove',e=>{ if(!drag) return; const dx=e.clientX-drag.x, dy=e.clientY-drag.y;
+  if(drag.range){ drag.range.lastX=e.clientX-cv.getBoundingClientRect().left; if(!drag.moved&&Math.abs(dx)>4) drag.moved=true; if(drag.moved) rangeApply(drag.range.lastX); return; }
   if(!drag.moved&&Math.abs(dx)+Math.abs(dy)>8){ drag.moved=true; if(S.playing) stop(); }
   if(!drag.moved) return;
   if(drag.note){ const d=drag.note, s=S.song; s.notes=JSON.parse(d.snap); const n=s.notes[d.idx]; if(!n) return;
@@ -1398,6 +1429,9 @@ cv.addEventListener('pointermove',e=>{ if(!drag) return; const dx=e.clientX-drag
   if(drag.axis==='v'){ S.vManual=true; S.keepSel=false; S.vhi=Math.round((drag.vhi0==null?geo.hi:drag.vhi0)+dy/geo.rh); draw(); return; }
   S.pos=Math.max(0,Math.min(songEnd(),drag.pos-dx/S.pps)); draw(); });
 function dragEnd(){ if(!drag) return; const d=drag; drag=null; if(!geo) return;
+  if(d.range){ clearInterval(d.range.timer);
+    if(!d.moved){ const t=tAt(d.lx); if(S.range&&(t<S.range.a||t>S.range.b)){ S.range=null; $('rngMsg').textContent=''; } } // 範囲の外を軽くタップしたら解除
+    rangeSync(); draw(); return; }
   if(d.note){ if(d.moved){ S.undo.push(d.note.snap); if(S.undo.length>80) S.undo.shift(); $('undo').disabled=false; $('undo2').disabled=false; } draw(); return; }
   if(d.moved) return;
   const h=hitNote(d.lx,d.ly);
@@ -1407,10 +1441,21 @@ function dragEnd(){ if(!drag) return; const d=drag; drag=null; if(!geo) return;
     const bs=Math.floor(beatOf(t)/S.step)*S.step; pushUndo();
     const n={s:0,e:0,p:p,f:p,m:true}; setBeats(n,bs,bs+2*S.step); S.song.notes.push(n); settle(n); armAdd(false); syncEdit(); draw(); return; }
   S.sel= h? h.v.i : -1; S.keepSel=false; syncEdit(); draw(); }
-cv.addEventListener('pointerup',dragEnd); cv.addEventListener('pointercancel',()=>{ if(drag&&drag.note&&drag.moved){ dragEnd(); } else drag=null; });
+cv.addEventListener('pointerup',dragEnd); cv.addEventListener('pointercancel',()=>{ if(drag&&drag.range){ clearInterval(drag.range.timer); drag=null; rangeSync(); draw(); return; } if(drag&&drag.note&&drag.moved){ dragEnd(); } else drag=null; });
+function tAt(x){ return S.pos+(x-geo.ph)/S.pps; }
+function snapT(t){ return Math.max(0,timeOf(Math.round(beatOf(t)/S.step)*S.step)); } // 「動かす単位」の格子に吸着
+function rangeApply(x){ const d=drag&&drag.range; if(!d) return; const t=Math.min(songEnd()+0.5,snapT(tAt(x))), r=S.range, mn=0.02;
+  if(d.mode==='new'){ const a=Math.min(d.anchor,t), b=Math.max(d.anchor,t); S.range= b-a>mn? {a:a,b:b} : null; }
+  else if(d.mode==='a'&&r) S.range={a:Math.min(t,r.b-mn),b:r.b};
+  else if(d.mode==='b'&&r) S.range={a:r.a,b:Math.max(t,r.a+mn)};
+  $('rngMsg').textContent=''; rangeSync(); draw(); }
+function rangeAuto(){ // 指が左右の端にあるあいだは、画面を送りながら範囲を伸ばす
+  const d=drag&&drag.range; if(!d||!drag.moved||!geo) return; const W=cv.clientWidth, x=d.lastX; let v=0;
+  if(x>W-32) v=Math.min(1.5,(x-(W-32))/32); else if(x<geo.lw+32) v=-Math.min(1.5,(geo.lw+32-x)/32); if(!v) return;
+  S.pos=Math.max(0,Math.min(songEnd(),S.pos+v*12/S.pps)); rangeApply(x); }
 function armAdd(on){ S.addArmed=on; $('addNote').classList.toggle('armed',on); $('addNote').textContent= on? '追加をやめる' : '＋ 音を追加'; if(on) S.toolsOpen=false; } // 追加の場所を選ぶあいだは、ボタンをたたんでバーを広く見せる
 $('addNote').onclick=()=>{ S.sel=-1; armAdd(!S.addArmed); syncEdit(); draw(); };
-function setEdit(on){ if(on&&(!S.song||!S.song.notes.length)) return; stop(); S.editMode=on; S.sel=-1; S.vhi=null; S.vManual=false; S.toolsOpen=false; armAdd(false); document.body.classList.toggle('editfull',on); syncEdit(); resize(); if(on) window.scrollTo(0,0); }
+function setEdit(on){ if(on&&(!S.song||!S.song.notes.length)) return; stop(); S.editMode=on; if(!on) S.range=null; $('rngMsg').textContent=''; rangeSync(); S.sel=-1; S.vhi=null; S.vManual=false; S.toolsOpen=false; armAdd(false); document.body.classList.toggle('editfull',on); syncEdit(); resize(); if(on) window.scrollTo(0,0); }
 $('editOpen').onclick=()=>setEdit(true); $('editDone').onclick=()=>setEdit(false);
 $('zoomIn').onclick=()=>{ S.pps=Math.min(300,S.pps*1.3); $('zoom').value=String(S.pps); draw(); };
 $('zoomOut').onclick=()=>{ S.pps=Math.max(40,S.pps/1.3); $('zoom').value=String(S.pps); draw(); };
@@ -1660,12 +1705,12 @@ $('scaleGo').onclick=()=>{ scaleTempo(+$('bpmNew').value); };
 S.range=null;
 function posLabel(t){ const s=S.song, b=beatOf(t)-(s.barShift||0), bar=Math.floor(b/s.beatsPerBar+1e-6); return (b<0?'':(bar+1)+'小節'+(Math.floor(b-bar*s.beatsPerBar+1e-6)+1)+'拍目・')+fmt(t); }
 function rangeSync(){ const s=S.song, has=!!s&&s.notes.length>0, r=S.range;
-  for(const id of ['allUp','allDown','rngA','rngB']) $(id).disabled=!has;
-  for(const id of ['rngUp','rngDown','rngUp1','rngDown1','rngClear']) $(id).disabled=!has||!r;
-  let t='まだ選んでいません';
-  if(has&&r){ const n=s.notes.filter(x=>x.s>=r.a-1e-3&&x.s<r.b-1e-3).length; t=posLabel(r.a)+' 〜 '+posLabel(r.b)+'（'+n+' 音）'; }
-  else if(has&&S.rangeA!=null) t='始点 '+posLabel(S.rangeA)+'。次に、終点にしたい位置へ動かして「終点をここに」を押してください';
-  $('rngInfo').textContent=t; }
+  for(const id of ['allUp','allDown']) $(id).disabled=!has;
+  const show=!!(S.editMode&&has&&r&&!(drag&&drag.range)); if($('rangePanel').hidden===show) $('rangePanel').hidden=!show; // なぞっている最中はパネルを出さない（バーの表示が縮んで見失わないように）
+  if(show){ const n=s.notes.filter(x=>x.s>=r.a-1e-3&&x.s<r.b-1e-3).length; $('rngInfo').textContent=bbLabel(r.a)+' 〜 '+bbLabel(r.b)+'（'+n+' 音）'; } }
+function bbLabel(t){ const s=S.song, b=beatOf(t)-(s.barShift||0)+1e-6, bar=Math.floor(b/s.beatsPerBar), bt=b-bar*s.beatsPerBar, bi=Math.floor(bt), fr=bt-bi;
+  const u=Math.round(fr*12), SUF={2:'＋24分',3:'＋16分',4:'＋3連8分',6:'の裏',8:'＋3連4分',9:'＋付点8分',10:'＋5/12拍'};
+  return (b<0? fmt(t) : (bar+1)+'小節'+(bi+1)+'拍'+(u>0&&u<12? (SUF[u]||'＋'+u+'/12拍') : '')); }
 function shiftNotes(d, r){ const s=S.song; if(!s||!s.notes.length) return;
   const tg= r? s.notes.filter(x=>x.s>=r.a-1e-3&&x.s<r.b-1e-3) : s.notes;
   if(!tg.length){ setStatus('その範囲に音がありません。',true); return; }
@@ -1673,14 +1718,11 @@ function shiftNotes(d, r){ const s=S.song; if(!s||!s.notes.length) return;
   if(!r) s.cshift=(s.cshift||0)+d; // 全体を動かすときは、歌った音程の線も一緒に動かす
   S.ver++; lastNow=''; pfKey='';
   const w=Math.abs(d)===12? '1オクターブ' : Math.abs(d)+'半音';
-  setStatus((r?'選んだ範囲の ':'譜面全体の ')+tg.length+' 音を'+w+(d>0?'上げ':'下げ')+'ました。'); syncUI(); restartIfPlaying(); draw(); }
+  const msg=(r?'選んだ範囲の ':'譜面全体の ')+tg.length+' 音を'+w+(d>0?'上げ':'下げ')+'ました。'; setStatus(msg); if(r) $('rngMsg').textContent='✓ '+msg; syncUI(); restartIfPlaying(); draw(); }
 $('allUp').onclick=()=>shiftNotes(12,null); $('allDown').onclick=()=>shiftNotes(-12,null);
 $('rngUp').onclick=()=>shiftNotes(12,S.range); $('rngDown').onclick=()=>shiftNotes(-12,S.range);
-$('rngUp1').onclick=()=>shiftNotes(1,S.range); $('rngDown1').onclick=()=>shiftNotes(-1,S.range);
-$('rngA').onclick=()=>{ if(!S.song) return; S.rangeA=S.pos; if(S.range){ if(S.pos<S.range.b-0.02) S.range={a:S.pos,b:S.range.b}; else S.range=null; } rangeSync(); draw(); };
-$('rngB').onclick=()=>{ if(!S.song) return; const a= S.range? S.range.a : S.rangeA; if(a==null){ setStatus('先に「始点をここに」を押してください。',true); return; }
-  if(S.pos<=a+0.02){ setStatus('終点は始点より後ろにしてください。',true); return; } S.range={a:a,b:S.pos}; rangeSync(); draw(); };
-$('rngClear').onclick=()=>{ S.range=null; S.rangeA=null; rangeSync(); draw(); };
+$('rngGo').onclick=()=>shiftNotes(+$('rngTr').value,S.range);
+$('rngClear').onclick=()=>{ S.range=null; $('rngMsg').textContent=''; rangeSync(); draw(); };
 
 // --- シークバー（編集画面と演奏モードの両方。つまみを動かすと再生位置が動く） ---
 let seeking=null;
@@ -1791,7 +1833,7 @@ function reana(){ if(!S.analysis) return; stop(); resegment(false); if(S.song.mo
 $('save').onclick=saveSong;
 function restartIfPlaying(){ if(S.playing){ stop(); S.noCount=true; try{ play(); }finally{ S.noCount=false; } } }
 // 版の表示（どの版を開いているか、画面で確かめられるようにする）と、古い版を覚えたブラウザ向けの読み込み直し
-const BUILD='/*BUILD*/';
+const BUILD='11/17 15:26';
 document.querySelectorAll('.ver').forEach(el=>{ el.textContent='版 '+BUILD; });
 if(/^https?:$/.test(location.protocol)&&/github\.io$/.test(location.hostname)){ $('reloadNew').hidden=false; $('reloadNew').onclick=()=>{ location.replace(location.pathname+'?v='+Date.now()); }; }
 window.addEventListener('resize',resize);
