@@ -1315,7 +1315,6 @@ async function punchStop(){
   try{
     const inst=$('src').value==='inst';
     const an=await analyzePitch(x,r.sr,null,inst? {fmin:60,fmax:2200,target:24000} : undefined); if(inst||$('prange').value==='off') retrack(an,'off');
-    if(r.mode==='hum'){ humAssign(an,r.tStart,dur); return; }
     const sens=$('sens').value==='auto'? 'high' : $('sens').value;
     const rr=segmentNotes(an,{minNote:+$('minNote').value/1000,sens:sens,robust:$('robust').value});
     const tS=r.tStart, bo=t=>beatOf(t+tS), to=b=>timeOf(b)-tS;
@@ -1324,6 +1323,7 @@ async function punchStop(){
       if(G) nn=gridTranscribe(G,bo,to,{unit:s.unit||24,lambda:LAMBDA_OF[s.orn==null?1:s.orn],onsets:energyOnsets(an,rr),trace:trace,octFix:inst}).notes; }
     else nn=rr.notes.map(q=>({s:q.s,e:q.e,p:q.p,f:q.f}));
     if($('leapFix').value==='on') fixLeaps(an,nn);
+    if(r.mode==='hum'){ humAssign(an,tS,dur,nn); return; } // 鼻歌を乗せるとき：ふだんどおりに取った音を、高さの手がかりとして使う
     nn=nn.map(q=>({s:r3(q.s+tS),e:r3(q.e+tS),p:q.p-(s.transpose||0),f:q.f}));
     if(s.mode==='grid'&&$('rhythmAuto').value==='on') rhythmFix(nn,null);
     const tEnd= s.mode==='grid'? timeOf(Math.ceil(beatOf(tS+dur)-0.05)) : tS+dur;
@@ -1339,26 +1339,38 @@ $('punchBtn').onclick=()=>punchStart();
 $('humBtn').onclick=$('humBtn2').onclick=()=>{ const s=S.song; if(!s) return; if(!s.notes.some(n=>n.e>S.pos+0.01)){ toast('白い線より後ろに音（バー）がありません。先に「リズムを打つ」でバーを作ってください。'); return; } punchStart('hum'); }; $('punchStop').onclick=()=>punchStop(); $('punchCancel').onclick=()=>{ const r=punchEnd(); if(r){ S.pos=r.tStart; draw(); toast('録音をやめました。譜面は変わっていません。'); } };
 
 // --- 鼻歌でバーに高さを付ける ---
-// 録音した区間に始まるバー（選んでいるパート）ごとに、そのバーの間に一番長く歌った高さを割り当てる。バーの数と長さは変えない
-function humAssign(an,tS,dur){
-  const s=S.song, tr=s.transpose||0, hop=an.hop, t0=an.t0, nF=an.midi.length;
-  const pk=percentile(an.rms,0.98)||1e-9, ok=i=> isFinite(an.midi[i])&&(!an.ap||an.ap[i]<0.35)&&an.rms[i]>pk*0.06;
-  // 全体の音程のずれ（半音の何割ずれて歌っているか）を先に求めて差し引く
-  let cs=0, sn=0; for(let i=0;i<nF;i++) if(ok(i)){ const a=2*Math.PI*(an.midi[i]-Math.round(an.midi[i])); cs+=Math.cos(a); sn+=Math.sin(a); }
-  const off=(cs||sn)? Math.atan2(sn,cs)/(2*Math.PI) : 0;
-  const tEnd=tS+dur; let done=0, miss=0; pushUndo();
+// 鼻歌は、ふだんの取り込みと同じ手順（音程のずれ・だんだん上がり下がりする癖の補正、オクターブ読み違いの直し）で一度音に分ける。
+// そのうえで、各バーの時間に一番長く重なった音の高さをそのバーに付ける。バーの数と長さは変えない。
+// 歌い出しがバーより少し遅れる・早まる癖は、区間全体で一番よく合うずれ（±0.25秒）を探して差し引く
+function humAssign(an,tS,dur,ref){
+  const s=S.song, tr=s.transpose||0, hop=an.hop, t0=an.t0, nF=an.midi.length, tEnd=tS+dur;
   const tgt=s.notes.filter(n=>n.s>=tS-1e-3&&n.s<tEnd-0.02);
+  if(!tgt.length){ toast('録音した区間にバーがありませんでした。'); return; }
+  ref=(ref||[]).filter(q=>q.e>q.s).sort((x,y)=>x.s-y.s);
+  const core=(n,L,full)=>{ const d=n.e-n.s; return full? [n.s-tS+L, Math.min(n.e,tEnd)-tS+L] : [n.s-tS+L+0.12*d, Math.min(n.e,tEnd)-tS+L-0.06*d]; };
+  const vote=(a,b)=>{ const m=new Map(); let tot=0; for(const q of ref){ if(q.s>=b) break; const o=Math.min(b,q.e)-Math.max(a,q.s); if(o>0){ m.set(q.p,(m.get(q.p)||0)+o); tot+=o; } }
+    let best=null, bc=0; for(const [p,c] of m) if(c>bc){ bc=c; best=p; } return {best,bc,tot}; };
+  // 全体のずれを探す（0 に近いほど少しだけ有利にする）
+  let lag=0, bestSc=-1;
+  for(let L=-0.25;L<=0.2501;L+=0.01){ let sc=0; for(const n of tgt){ const [a,b]=core(n,L,false); if(b<=a) continue; sc+=vote(a,b).bc/(b-a); } sc-=Math.abs(L)*0.4; if(sc>bestSc+1e-9){ bestSc=sc; lag=L; } }
+  // 声の取れた瞬間（フレーム）から直接決める予備の方法（重なる音がないバー用）
+  const pk=percentile(an.rms,0.98)||1e-9, ok=i=> isFinite(an.midi[i])&&an.rms[i]>pk*0.04;
+  const tune=(ref.length? median(ref.map(q=>q.f-q.p)) : 0);
+  let done=0, miss=0; pushUndo();
   for(const n of tgt){
-    const d=n.e-n.s, pick=(fa,fb)=>{ const ia=Math.max(0,Math.ceil((n.s-tS+fa*d-t0)/hop)), ib=Math.min(nF-1,Math.floor((Math.min(n.e,tEnd)-tS-fb*d-t0)/hop)), v=[]; for(let i=ia;i<=ib;i++) if(ok(i)) v.push(an.midi[i]-off); return v; };
-    let v=pick(0.15,0.1); if(v.length<3) v=pick(0,0);
-    if(v.length<3){ miss++; continue; }
-    const h=new Map(); for(const m of v){ const r=Math.round(m); h.set(r,(h.get(r)||0)+1); }
-    let best=null, bc=-1; for(const [r,c] of h) if(c>bc){ bc=c; best=r; }
-    const near=v.filter(m=>Math.abs(m-best)<0.5).sort((a,b)=>a-b);
-    n.p=best-tr; n.f=Math.round(near[near.length>>1]*100)/100-tr; delete n.ph; done++;
+    let [a,b]=core(n,lag,false); let v=vote(a,b);
+    if(v.best==null||v.bc<0.3*(b-a)){ [a,b]=core(n,lag,true); const w=vote(a,b); if(w.best!=null&&w.bc>=(v.bc||0)) v=w; }
+    let p=v.best;
+    if(p==null){ const ia=Math.max(0,Math.ceil((a-t0)/hop)), ib=Math.min(nF-1,Math.floor((b-t0)/hop)), h=new Map(); let cnt=0;
+      for(let i=ia;i<=ib;i++) if(ok(i)){ const r=Math.round(an.midi[i]-(an._off||0)); h.set(r,(h.get(r)||0)+1); cnt++; }
+      if(cnt>=3){ let bc=-1; for(const [r,c] of h) if(c>bc){ bc=c; p=r; } } }
+    if(p==null){ miss++; continue; }
+    n.p=p-tr; n.f=Math.round((p+tune)*100)/100-tr; delete n.ph; done++;
   }
   S.analysis=null; S.prelim=null; S.grid=null; S.sel=-1; S.ver++; syncUI(); draw();
-  toast(tgt.length? (done+' 個のバーに高さを付けました'+(miss? '（'+miss+' 個は声が取れなかったので、そのままです。灰色のバー）' : '')+'。「戻す」で元に戻せます。') : '録音した区間にバーがありませんでした。');
+  const lagMs=Math.round(lag*1000);
+  toast(done+' 個のバーに高さを付けました'+(Math.abs(lagMs)>=20? '（歌がバーより '+Math.abs(lagMs)+' ミリ秒'+(lagMs>0?'遅れ':'早まり')+'ぎみだったので、その分ずらして合わせました）':'')+(miss? '。'+miss+' 個は声が取れなかったので灰色のままです' : '')+'。「戻す」で元に戻せます。');
+  return {lag,done,miss};
 }
 
 // --- リズムを打つ（メトロノームに合わせて押した長さがそのままバーになる） ---
@@ -2372,7 +2384,7 @@ function reana(){ if(!S.analysis) return; stop(); resegment(false); if(S.song.mo
 $('save').onclick=saveSong;
 function restartIfPlaying(){ if(S.playing){ stop(); S.noCount=true; try{ play(); }finally{ S.noCount=false; } } }
 // 版の表示（どの版を開いているか、画面で確かめられるようにする）と、古い版を覚えたブラウザ向けの読み込み直し
-const BUILD='11/19 17:54';
+const BUILD='11/20 17:04';
 document.querySelectorAll('.ver').forEach(el=>{ el.textContent='版 '+BUILD; });
 if(/^https?:$/.test(location.protocol)&&/github\.io$/.test(location.hostname)){ $('reloadNew').hidden=false; $('reloadNew').onclick=()=>{ location.replace(location.pathname+'?v='+Date.now()); }; }
 window.addEventListener('resize',resize);
