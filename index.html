@@ -191,6 +191,14 @@ body.editfull .edbar .sp{display:none} body.editfull .edbar{gap:6px;min-width:0}
 .svzoom{display:flex;gap:8px;align-items:center;padding:4px 10px;background:#eee;font-size:13px}.svzoom input{flex:1}
 #svPaper{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;background:#fff}
 @media print{body>*:not(#scoreView){display:none!important}#scoreView{position:static}.svbar,.svzoom{display:none!important}#svPaper{overflow:visible}}
+#tapBar{position:fixed;left:8px;right:8px;top:8px;z-index:90;background:#1f1a33;border:2px solid #7b6cf6;border-radius:14px;padding:8px 12px;box-shadow:0 8px 24px rgba(0,0,0,.6)}
+#tapMsg{font-weight:700;font-size:15px}
+.tapopt{display:flex;gap:10px;align-items:center;margin-top:6px;font-size:13px;flex-wrap:nowrap}.tapopt select{padding:4px 6px}.tapopt label{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}.tapopt input{width:18px;height:18px}
+#tapBar .btn{padding:10px 12px}
+#tapPad{position:fixed;left:0;right:0;bottom:0;height:34vh;z-index:89;padding:10px;background:rgba(10,8,16,.85);touch-action:none;-webkit-user-select:none;user-select:none}
+#tapPadIn{height:100%;border-radius:20px;background:#2b2450;border:3px solid #7b6cf6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#d9d4f5;text-align:center;padding:8px}
+#tapPadIn b{font-size:26px} #tapPadIn span{font-size:13px}
+#tapPad.on #tapPadIn{background:#ffd166;border-color:#fff;color:#2a1d00}
 #punchBar{position:fixed;left:8px;right:8px;top:8px;z-index:90;background:#241c33;border:2px solid #e0607e;border-radius:14px;padding:10px 12px;box-shadow:0 8px 24px rgba(0,0,0,.6)}
 #punchBar[hidden]{display:none} #punchMsg{font-size:17px;font-weight:800;color:#ffb3c1}
 .edbar .ver{display:none} .edbar b,.edbar .btn{white-space:nowrap} .edbar .btn{padding:6px 12px}
@@ -247,7 +255,8 @@ body.editfull .transport{gap:12px} body.editfull .seekrow{margin:8px 0 0}
       <div class="row"><span class="lbl">テンポ</span>♩=<input id="recBpm" type="number" min="20" max="400" step="1" value="100"><span class="lbl" style="min-width:0">カウント</span><select id="recBars"><option value="1" selected>1小節</option><option value="2">2小節</option></select></div>
       <div class="row"><label class="chk"><input id="recClick" type="checkbox" checked>録音中もメトロノームを鳴らす（イヤホン推奨）</label></div>
       <div class="row"><span class="lbl">遅れの補正</span><input id="recLat" type="number" step="10" value="0" style="width:70px">ミリ秒<span class="hint" style="margin:0">ワイヤレスイヤホンでは音が遅れて聞こえるので、150〜250 くらいを入れてください</span></div>
-      <div class="row"><button id="recGo" class="btn pri" style="font-size:16px;padding:10px 18px">● 録音を始める</button></div>
+      <div class="row"><button id="recGo" class="btn pri" style="font-size:16px;padding:10px 18px">● 録音を始める</button><button id="tapNew" class="btn pri2" style="font-size:15px;padding:10px 14px">👆 リズムを打って作る</button></div>
+      <p class="hint">「リズムを打って作る」：メトロノームに合わせて画面を押して音の長さ（リズム）を先に作り、そのあと鼻歌を乗せて高さを付けます。リズムを打つ部分はマイクを使いません。</p>
       <div id="recMsg" class="status"></div>
       <p class="hint" id="recHelp" hidden>Claude の画面の中で開いているこのページでは、マイクの使用が禁止されています。録音機能は、このアプリの HTML ファイルをパソコンのブラウザで直接開くか、HTTPS のサイトに置いて開いたときに使えます。</p>
       <p class="hint">カウントのあと、メトロノームに合わせて歌ってください。止めると、カウントの部分を切り落として、録音の先頭（0.00秒）を1小節目の頭としてそのまま譜面にします。拍子は下の「テンポと表示」の設定を使います。スピーカーで鳴らすとメトロノームの音が録音に入るので、イヤホンで聞くか、「録音中もメトロノームを鳴らす」をオフにしてください。</p>
@@ -300,12 +309,13 @@ body.editfull .transport{gap:12px} body.editfull .seekrow{margin:8px 0 0}
       </div>
       <div class="edrow">
         <span id="edSelBox"><b id="selName"></b><span id="selInfo"></span></span>
-        <button id="addNote" class="btn big2">＋ 音を追加</button><button id="punchBtn" class="btn big2 recb">● ここから録音</button>
+        <button id="addNote" class="btn big2">＋ 音を追加</button><button id="punchBtn" class="btn big2 recb">● ここから録音</button><button id="humBtn" class="btn big2 recb" hidden>🎤 鼻歌で高さ</button>
         <button id="qShort" class="btn big2" hidden>短く</button><button id="qLong" class="btn big2" hidden>長く</button><button id="closeEdit" class="btn big2" hidden>解除</button>
         <button id="toolsToggle" class="btn big2 pri2">その他 ▲</button>
       </div>
       <div id="toolsPanel" hidden>
         <div id="edNone">
+          <div class="row"><button id="tapBtn" class="btn big2 pri2">👆 リズムを打つ</button><button id="humBtn2" class="btn big2 recb">🎤 鼻歌で高さを付ける</button></div>
           <div class="row"><button id="rhythmBtn" class="btn big2">リズムを整える</button><button id="scoreBtn2" class="btn big2">🎼 楽譜</button><span class="lbl" style="min-width:0">動かす単位</span><select id="estep"><option value="0.25" selected>16分</option><option value="0.1666666667">24分</option><option value="0.5">8分</option><option value="1">4分</option></select></div>
           <details id="shiftBox" class="shiftbox"><summary>譜面全体の高さを動かす</summary>
             <div class="row"><span class="lbl">譜面全体</span><button id="allDown" class="btn big2" disabled>↓ 1オクターブ</button><button id="allUp" class="btn big2" disabled>↑ 1オクターブ</button></div>
@@ -416,6 +426,11 @@ body.editfull .transport{gap:12px} body.editfull .seekrow{margin:8px 0 0}
   <div id="pfCount" hidden></div>
 </div>
 <div id="toast" hidden></div>
+<div id="tapBar" hidden>
+  <div class="row" style="margin:0;flex-wrap:nowrap;align-items:center"><div id="tapMsg" style="flex:1">準備中…</div><button id="tapStop" class="btn pri2">■ 確定</button><button id="tapCancel" class="btn">やめる</button></div>
+  <div class="tapopt"><select id="tapGrid"><option value="6">8分に寄せる</option><option value="3" selected>16分に寄せる</option><option value="2">24分に寄せる</option></select><label><input id="tapGap" type="checkbox" checked>隙間詰め</label><label><input id="tapGuide" type="checkbox" checked>他パート</label></div>
+</div>
+<div id="tapPad" hidden><div id="tapPadIn"><b>ここを押す</b><span>押している間、音が伸びます（短く押す＝短い音）</span></div></div>
 <div id="punchBar" hidden>
   <div id="punchMsg">準備中…</div>
   <div class="row" style="margin:6px 0 0"><label class="pill2"><input id="punchMetro" type="checkbox" checked>メトロノーム</label><label class="pill2"><input id="punchGuide" type="checkbox" checked>他のパートを流す</label></div>
@@ -990,7 +1005,7 @@ function mergeOrnaments(v, lvl){
 function viewNotes(){
   const s=S.song; if(!s) return [];
   const tr=s.transpose||0;
-  let v=s.notes.map((n,i)=>({s:n.s,e:n.e,p:n.p+tr,f:(n.f==null?n.p:n.f)+tr,i:i,m:n.m})).sort((a,b)=>a.s-b.s);
+  let v=s.notes.map((n,i)=>({s:n.s,e:n.e,p:n.p+tr,f:(n.f==null?n.p:n.f)+tr,i:i,m:n.m,ph:n.ph})).sort((a,b)=>a.s-b.s);
   // 音階に合わせる：音階から外れた音を、実際に歌った高さに近い方の音階の音へ（amb は半音の間で迷った音だけ）
   if(s.snap&&s.snap!=='none'){ for(const n of v){ if(inScale(n.p)) continue;
       if(s.snap==='amb'&&Math.abs(n.f-n.p)<=0.25) continue;
@@ -1254,8 +1269,8 @@ $('recGo').onclick=()=>{ if(rec) recStop(); else recStart(); };
 // 白い縦線の直前の拍から、1小節のカウントのあと録音を始める。録音中は曲の拍どおりにメトロノームと他のパートを鳴らす。
 // 止めると、録音した区間に始まる「選んでいるパート」の音を、新しく取った音と入れ替える
 let punch=null;
-async function punchStart(){
-  const s=S.song; if(!s||punch||rec) return;
+async function punchStart(mode){
+  const s=S.song; if(!s||punch||rec||tap) return; mode=mode||'replace';
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ toast('この画面ではマイクが使えません。GitHub に置いた版（https）で開いてください。'); return; }
   stop(); let stream;
   try{ stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}); }
@@ -1264,22 +1279,26 @@ async function punchStart(){
   const tStart=Math.max(0,timeOf(Math.floor(beatOf(S.pos)+1e-6))), bpb=s.beatsPerBar, P=Math.max(0.2,timeOf(beatOf(tStart)+1)-tStart);
   const t0=c.currentTime+0.3, tHead=t0+bpb*P, ctxOf=t=>tHead+(t-tStart);
   const src=c.createMediaStreamSource(stream), proc=c.createScriptProcessor(4096,1,1), mute=c.createGain(); mute.gain.value=0;
-  punch={stream,src,proc,mute,chunks:[],len:0,firstT:null,sr:c.sampleRate,tStart,t0,tHead,P,bpb,nodes:[],kb:Math.ceil(beatOf(tStart)-1e-6),done:new Set(),timer:0,raf:0};
+  punch={mode,stream,src,proc,mute,chunks:[],len:0,firstT:null,sr:c.sampleRate,tStart,t0,tHead,P,bpb,nodes:[],kb:Math.ceil(beatOf(tStart)-1e-6),done:new Set(),timer:0,raf:0};
+  $('punchStop').textContent= mode==='hum'? '■ 止めて高さを付ける' : '■ 止めて差し替える';
   proc.onaudioprocess=e=>{ if(!punch) return; if(punch.firstT===null) punch.firstT=c.currentTime-4096/c.sampleRate; const d=e.inputBuffer.getChannelData(0); punch.chunks.push(new Float32Array(d)); punch.len+=d.length; if(punch.len>punch.sr*600) punchStop(true); };
   src.connect(proc); proc.connect(mute); mute.connect(c.destination);
   const click=(a,down,vol)=>{ const o=c.createOscillator(), g=c.createGain(); o.frequency.value=down?1760:1175; g.gain.setValueAtTime(vol,a); g.gain.exponentialRampToValueAtTime(0.001,a+0.05); o.connect(g); g.connect(c.destination); o.start(a); o.stop(a+0.06); punch.nodes.push(o); };
   for(let k=0;k<bpb;k++) click(t0+k*P,k===0,0.3); // カウント（1小節）
   const all=[]; s.parts.forEach((p,i)=>{ if(i!==s.cur&&!p.mute) for(const n of (p.notes||[])) if(n.e>tStart) all.push(n); }); all.sort((a,b)=>a.s-b.s);
+  const mine= mode==='hum'? s.notes.filter(n=>n.s>=tStart-1e-3).sort((a,b)=>a.s-b.s) : []; // 鼻歌を乗せるときは、自分のバーの頭で小さく合図する
   const sched=()=>{ if(!punch) return; const until=c.currentTime+1.5;
     if($('punchMetro').checked) while(ctxOf(timeOf(punch.kb))<until){ const k=punch.kb++, kk=k-(s.barShift||0); click(ctxOf(timeOf(k)),((kk%bpb)+bpb)%bpb===0,0.2); }
     else while(ctxOf(timeOf(punch.kb))<until) punch.kb++;
+    for(const n of mine){ const a=ctxOf(n.s); if(a>until) break; if(punch.done.has(n)||a<c.currentTime) continue; punch.done.add(n);
+      const o=c.createOscillator(), g=c.createGain(); o.type='triangle'; o.frequency.value=2637; g.gain.setValueAtTime(0.07,a); g.gain.exponentialRampToValueAtTime(0.001,a+0.03); o.connect(g); g.connect(c.destination); o.start(a); o.stop(a+0.04); punch.nodes.push(o); }
     if($('punchGuide').checked) for(const n of all){ const a=ctxOf(Math.max(n.s,tStart)), b=ctxOf(n.e); if(a>until) break; if(punch.done.has(n)||b<c.currentTime) continue; punch.done.add(n);
       const o=c.createOscillator(), g=c.createGain(); o.type='sine'; o.frequency.value=midiToHz(n.p+(s.transpose||0)); const aa=Math.max(a,c.currentTime+0.01);
       g.gain.setValueAtTime(0,aa); g.gain.linearRampToValueAtTime(0.16,aa+0.02); g.gain.setValueAtTime(0.16,Math.max(aa+0.021,b-0.05)); g.gain.linearRampToValueAtTime(0,b); o.connect(g); g.connect(c.destination); o.start(aa); o.stop(b+0.02); punch.nodes.push(o); } };
   sched(); punch.timer=setInterval(sched,200);
   const tick=()=>{ if(!punch) return; const el=c.currentTime-tHead;
     if(el<0){ $('punchMsg').textContent='カウント中… '+Math.max(1,Math.ceil(-el/P)); S.pos=tStart; }
-    else { S.pos=tStart+el; $('punchMsg').textContent='● 録音中 '+barNoAt(S.pos)+'（'+el.toFixed(1)+' 秒）'; }
+    else { S.pos=tStart+el; $('punchMsg').textContent=(punch.mode==='hum'?'🎤 光っているバーに合わせて歌ってください ':'● 録音中 ')+barNoAt(S.pos)+'（'+el.toFixed(1)+' 秒）'; }
     draw(); punch.raf=requestAnimationFrame(tick); };
   $('punchBar').hidden=false; tick();
 }
@@ -1296,6 +1315,7 @@ async function punchStop(){
   try{
     const inst=$('src').value==='inst';
     const an=await analyzePitch(x,r.sr,null,inst? {fmin:60,fmax:2200,target:24000} : undefined); if(inst||$('prange').value==='off') retrack(an,'off');
+    if(r.mode==='hum'){ humAssign(an,r.tStart,dur); return; }
     const sens=$('sens').value==='auto'? 'high' : $('sens').value;
     const rr=segmentNotes(an,{minNote:+$('minNote').value/1000,sens:sens,robust:$('robust').value});
     const tS=r.tStart, bo=t=>beatOf(t+tS), to=b=>timeOf(b)-tS;
@@ -1315,7 +1335,98 @@ async function punchStop(){
     toast(barNoAt(tS)+'から '+dur.toFixed(1)+' 秒ぶんを、'+nn.length+' 個の音に差し替えました（「戻す」で元に戻せます）。');
   }catch(e){ console.error(e); toast('録音の解析中にエラーが起きました。'); }
 }
-$('punchBtn').onclick=()=>punchStart(); $('punchStop').onclick=()=>punchStop(); $('punchCancel').onclick=()=>{ const r=punchEnd(); if(r){ S.pos=r.tStart; draw(); toast('録音をやめました。譜面は変わっていません。'); } };
+$('punchBtn').onclick=()=>punchStart();
+$('humBtn').onclick=$('humBtn2').onclick=()=>{ const s=S.song; if(!s) return; if(!s.notes.some(n=>n.e>S.pos+0.01)){ toast('白い線より後ろに音（バー）がありません。先に「リズムを打つ」でバーを作ってください。'); return; } punchStart('hum'); }; $('punchStop').onclick=()=>punchStop(); $('punchCancel').onclick=()=>{ const r=punchEnd(); if(r){ S.pos=r.tStart; draw(); toast('録音をやめました。譜面は変わっていません。'); } };
+
+// --- 鼻歌でバーに高さを付ける ---
+// 録音した区間に始まるバー（選んでいるパート）ごとに、そのバーの間に一番長く歌った高さを割り当てる。バーの数と長さは変えない
+function humAssign(an,tS,dur){
+  const s=S.song, tr=s.transpose||0, hop=an.hop, t0=an.t0, nF=an.midi.length;
+  const pk=percentile(an.rms,0.98)||1e-9, ok=i=> isFinite(an.midi[i])&&(!an.ap||an.ap[i]<0.35)&&an.rms[i]>pk*0.06;
+  // 全体の音程のずれ（半音の何割ずれて歌っているか）を先に求めて差し引く
+  let cs=0, sn=0; for(let i=0;i<nF;i++) if(ok(i)){ const a=2*Math.PI*(an.midi[i]-Math.round(an.midi[i])); cs+=Math.cos(a); sn+=Math.sin(a); }
+  const off=(cs||sn)? Math.atan2(sn,cs)/(2*Math.PI) : 0;
+  const tEnd=tS+dur; let done=0, miss=0; pushUndo();
+  const tgt=s.notes.filter(n=>n.s>=tS-1e-3&&n.s<tEnd-0.02);
+  for(const n of tgt){
+    const d=n.e-n.s, pick=(fa,fb)=>{ const ia=Math.max(0,Math.ceil((n.s-tS+fa*d-t0)/hop)), ib=Math.min(nF-1,Math.floor((Math.min(n.e,tEnd)-tS-fb*d-t0)/hop)), v=[]; for(let i=ia;i<=ib;i++) if(ok(i)) v.push(an.midi[i]-off); return v; };
+    let v=pick(0.15,0.1); if(v.length<3) v=pick(0,0);
+    if(v.length<3){ miss++; continue; }
+    const h=new Map(); for(const m of v){ const r=Math.round(m); h.set(r,(h.get(r)||0)+1); }
+    let best=null, bc=-1; for(const [r,c] of h) if(c>bc){ bc=c; best=r; }
+    const near=v.filter(m=>Math.abs(m-best)<0.5).sort((a,b)=>a-b);
+    n.p=best-tr; n.f=Math.round(near[near.length>>1]*100)/100-tr; delete n.ph; done++;
+  }
+  S.analysis=null; S.prelim=null; S.grid=null; S.sel=-1; S.ver++; syncUI(); draw();
+  toast(tgt.length? (done+' 個のバーに高さを付けました'+(miss? '（'+miss+' 個は声が取れなかったので、そのままです。灰色のバー）' : '')+'。「戻す」で元に戻せます。') : '録音した区間にバーがありませんでした。');
+}
+
+// --- リズムを打つ（メトロノームに合わせて押した長さがそのままバーになる） ---
+// 押した瞬間が音の始まり、離した瞬間が終わり。押すたびに、選んだ細かさの格子に寄せる。高さはまだ決まっていないので灰色のバー（ph）にしておく
+let tap=null;
+function phPitch(){ const s=S.song, tr=s.transpose||0; const v=s.notes.filter(n=>!n.ph).map(n=>n.p).sort((a,b)=>a-b);
+  if(v.length) return v[v.length>>1]; return geo? Math.round((geo.lo+geo.hi)/2)-tr : 60-tr; }
+async function tapStart(){
+  const s=S.song; if(!s||tap||punch||rec) return;
+  if(s.mode!=='grid') s.mode='grid';
+  stop(); if(!S.editMode) setEdit(true);
+  const c=getCtx(); if(c.resume) await c.resume();
+  const tStart=Math.max(0,timeOf(Math.floor(beatOf(S.pos)+1e-6))), bpb=s.beatsPerBar, P=Math.max(0.2,timeOf(beatOf(tStart)+1)-tStart);
+  const t0=c.currentTime+0.3, tHead=t0+bpb*P, ctxOf=t=>tHead+(t-tStart);
+  pushUndo();
+  tap={tStart,t0,tHead,P,bpb,orig:s.notes.map(n=>Object.assign({},n)),neu:[],hold:null,nodes:[],kb:Math.ceil(beatOf(tStart)-1e-6),done:new Set(),timer:0,raf:0,ph:phPitch()};
+  const click=(a,down,vol)=>{ const o=c.createOscillator(), g=c.createGain(); o.frequency.value=down?1760:1175; g.gain.setValueAtTime(vol,a); g.gain.exponentialRampToValueAtTime(0.001,a+0.05); o.connect(g); g.connect(c.destination); o.start(a); o.stop(a+0.06); tap.nodes.push(o); };
+  for(let k=0;k<bpb;k++) click(t0+k*P,k===0,0.3); // カウント（1小節）
+  const all=[]; s.parts.forEach((p,i)=>{ if(i!==s.cur&&!p.mute) for(const n of (p.notes||[])) if(n.e>tStart) all.push(n); }); all.sort((a,b)=>a.s-b.s);
+  const sched=()=>{ if(!tap) return; const until=c.currentTime+1.5;
+    while(ctxOf(timeOf(tap.kb))<until){ const k=tap.kb++, kk=k-(s.barShift||0); click(ctxOf(timeOf(k)),((kk%bpb)+bpb)%bpb===0,0.25); }
+    if($('tapGuide').checked) for(const n of all){ const a=ctxOf(Math.max(n.s,tStart)), b=ctxOf(n.e); if(a>until) break; if(tap.done.has(n)||b<c.currentTime) continue; tap.done.add(n);
+      const o=c.createOscillator(), g=c.createGain(); o.type='sine'; o.frequency.value=midiToHz(n.p+(s.transpose||0)); const aa=Math.max(a,c.currentTime+0.01);
+      g.gain.setValueAtTime(0,aa); g.gain.linearRampToValueAtTime(0.14,aa+0.02); g.gain.setValueAtTime(0.14,Math.max(aa+0.021,b-0.05)); g.gain.linearRampToValueAtTime(0,b); o.connect(g); g.connect(c.destination); o.start(aa); o.stop(b+0.02); tap.nodes.push(o); } };
+  sched(); tap.timer=setInterval(sched,200);
+  const tick=()=>{ if(!tap) return; const el=c.currentTime-tHead;
+    if(el<0){ $('tapMsg').textContent='カウント中… '+Math.max(1,Math.ceil(-el/P)); S.pos=tStart; }
+    else { S.pos=tStart+el; $('tapMsg').textContent='👆 '+barNoAt(S.pos)+'　'+tap.neu.length+' 個'; }
+    if(tap.hold) tap.hold.e=Math.max(tap.hold.s+0.02,tapNow());
+    tapLive(); draw(); tap.raf=requestAnimationFrame(tick); };
+  $('tapBar').hidden=false; $('tapPad').hidden=false; tick();
+}
+// 押した時刻 → 曲の時刻。聞こえるクリックは出力の遅れ分だけ遅れるので、その分（と「遅れの補正」）を差し引く
+function tapNow(){ const c=getCtx(); const lat=(c.outputLatency||0)+(c.baseLatency||0)+(+$('recLat').value||0)/1000; return tap.tStart+(c.currentTime-tap.tHead)-lat; }
+function tapSnap(t){ const u=+$('tapGrid').value||3; return timeOf(Math.round(beatOf(t)*12/u)*u/12); }
+function tapLive(){ // 録っている区間の古い音を隠し、新しい音を見せる
+  const s=S.song, now=Math.max(tap.tStart,S.pos);
+  const keep=tap.orig.filter(q=>q.s<tap.tStart-1e-3||q.s>=now).map(q=>{ const z=Object.assign({},q); if(z.s<tap.tStart&&z.e>tap.tStart) z.e=tap.tStart; return z; });
+  s.notes=keep.concat(tap.neu.map(q=>Object.assign({},q)), tap.hold? [Object.assign({},tap.hold)] : []).sort((a,b)=>a.s-b.s); S.ver++; }
+function tapDown(){ if(!tap||tap.hold) return; const t=tapNow(); if(t<tap.tStart-0.15) return; // カウント中の早押しは無視
+  const s0=Math.max(tap.tStart,tapSnap(t)); tap.hold={s:s0,e:s0+0.02,p:tap.ph,f:tap.ph,ph:true}; $('tapPad').classList.add('on'); }
+function tapUp(){ if(!tap||!tap.hold) return; $('tapPad').classList.remove('on');
+  const h=tap.hold; tap.hold=null; const u=(+$('tapGrid').value||3)/12; let e=tapSnap(tapNow());
+  if(e<=h.s+1e-4) e=timeOf(beatOf(h.s)+u); h.e=r3(e); h.s=r3(h.s);
+  // 前の音と重なったら前の音を削る（同じ位置で始まるなら置き換える）
+  const L=tap.neu[tap.neu.length-1]; if(L){ if(L.s>=h.s-1e-4) tap.neu.pop(); else if(L.e>h.s) L.e=h.s; else if($('tapGap').checked&&beatOf(h.s)-beatOf(L.e)<=u+1e-4) L.e=h.s; } // 指を早めに離したための短い隙間は詰める
+  tap.neu.push(h); }
+const pad=$('tapPad');
+pad.addEventListener('pointerdown',e=>{ e.preventDefault(); try{ pad.setPointerCapture(e.pointerId); }catch(x){} tapDown(); });
+for(const ev of ['pointerup','pointercancel']) pad.addEventListener(ev,e=>{ e.preventDefault(); tapUp(); });
+pad.addEventListener('contextmenu',e=>e.preventDefault());
+window.addEventListener('keydown',e=>{ if(tap&&(e.code==='Space'||e.key===' ')&&!e.repeat){ e.preventDefault(); tapDown(); } });
+window.addEventListener('keyup',e=>{ if(tap&&(e.code==='Space'||e.key===' ')){ e.preventDefault(); tapUp(); } });
+function tapEnd(){ const r=tap; if(!r) return null; tap=null; clearInterval(r.timer); cancelAnimationFrame(r.raf); $('tapBar').hidden=true; $('tapPad').hidden=true; $('tapPad').classList.remove('on');
+  for(const o of r.nodes) try{o.stop();}catch(e){} return r; }
+$('tapStop').onclick=()=>{ if(!tap) return; if(tap.hold) tapUp(); const r=tap, end=Math.max(S.pos,r.tStart), n=r.neu.length;
+  // 止めた位置（最後の音がそれより長ければその終わり）までの古い音を、新しい音と入れ替える
+  const tEnd=Math.max(end,...r.neu.map(q=>q.e));
+  const s=S.song; s.notes=r.orig.filter(q=>q.s<r.tStart-1e-3||q.s>=tEnd-1e-3).map(q=>{ if(q.s<r.tStart&&q.e>r.tStart) q.e=r.tStart; return q; }).concat(r.neu).sort((a,b)=>a.s-b.s);
+  tapEnd(); S.pos=r.tStart; S.sel=-1; S.ver++; syncUI(); syncEdit(); draw();
+  toast(n? n+' 個のバーを作りました。次は「🎤 鼻歌で高さ」を押し、光るバーに合わせて歌うと高さが付きます。' : 'バーは作られませんでした。'); };
+$('tapCancel').onclick=()=>{ const r=tapEnd(); if(!r) return; S.song.notes=r.orig; S.undo.pop(); $('undo').disabled=$('undo2').disabled=!S.undo.length; S.pos=r.tStart; S.ver++; draw(); toast('やめました。譜面は変わっていません。'); };
+$('tapBtn').onclick=()=>tapStart();
+$('tapNew').onclick=()=>{ const bpm=+$('recBpm').value; if(!(bpm>=20&&bpm<=400)){ $('recMsg').textContent='テンポは 20〜400 の数で入れてください。'; return; }
+  stop(); S.loadId=(S.loadId||0)+1; S.buffer=null; S.analysis=null; S.prelim=null; S.grid=null; S.inst=null; S.level=null; S.autoSens=null; S.undo=[]; S.range=null; S.rangeA=null; S.needTempo=false;
+  S.song={ id:null, name:$('name').value.trim()||'リズムから', mode:'grid', unit:24, barShift:0, bpm:bpm, beatOffset:0, beats:null, tempoMode:'fixed', orn:1, beatsPerBar:+$('tsig').value||4, quantize:false, key:'auto', transpose:0,
+    tidyShort:0, tidyGap:false, snap:'none', tuningCents:0, notes:[], curve:[], hop:0.01, t0:0, parts:[{name:'メロディ',mute:false,color:0}], cur:0 };
+  S.pos=0; S.sel=-1; S.ver++; $('origRow').hidden=true; setStatus('空の譜面を作りました（♩='+bpm+'、'+S.song.beatsPerBar+'/4）。'); syncUI(); setEdit(true); tapStart(); };
 
 // --- テンポ（一定／揺れに合わせる／手で拍を打つ） ---
 function computeTempo(){
@@ -1428,7 +1539,7 @@ function draw(){
   syncSeq(notes);
   if(!s){ g2.fillStyle='#8a86a0'; g2.font='14px system-ui,sans-serif'; g2.textAlign='center';
     g2.fillText('録音ファイルを読み込むか、保存した曲を開いてください',W/2,H/2); updateNow(null); return; }
-  const lw=46, top= S.editMode? 44 : 22, ph=lw+(W-lw)*0.28; // 編集中は上端（y=4〜38）を範囲選択バーにする
+  const lw=46, top= S.editMode? 44 : 22, ph=lw+(W-lw)*(tap?0.62:0.28); // リズムを打っている間は、打ち終わったバーが見えるように線を右寄りにする // 編集中は上端（y=4〜38）を範囲選択バーにする
   const others=otherParts(), trp=s.transpose||0;
   const ps=notes.length? notes.map(n=>n.p) : [].concat(...others.map(p=>p.notes.map(n=>n.p+trp)));
   let lo= ps.length? Math.min(...ps)-2 : 55, hi= ps.length? Math.max(...ps)+2 : 67;
@@ -1494,7 +1605,7 @@ function draw(){
     const y=Y(n.p)+1, h=rh-2, on=S.pos>=n.s&&S.pos<n.e, past=S.pos>=n.e;
     if(on) curIdx=i;
     const xa=Math.max(lw,x0);
-    g2.fillStyle= on? '#ffd166' : past? '#e0607e' : '#7b6cf6';
+    g2.fillStyle= on? '#ffd166' : n.ph? (past?'#8d7f8f':'#6b6880') : past? '#e0607e' : '#7b6cf6';
     if(on){ g2.shadowColor='#ffd166'; g2.shadowBlur=14; }
     rr(xa,y,Math.max(2,x1-xa),h,Math.min(6,h/2)); g2.fill(); g2.shadowBlur=0;
     if(on&&!past){ // 進行中のバーは左側を塗りつぶし済み色に
@@ -1506,10 +1617,10 @@ function draw(){
         for(const [gx,side] of [[x0-17,0],[x1+1,1]]){ if(gx+16<lw||gx>W) continue; g2.fillStyle='#fff'; rr(gx,gy,16,gh,6); g2.fill();
           g2.fillStyle='#2a1d00'; g2.fillRect(gx+5,gy+gh*0.3,2,gh*0.4); g2.fillRect(gx+9,gy+gh*0.3,2,gh*0.4); } } }
     if(x1-xa>18) labels.push(()=>{ const fs=Math.min(14,Math.max(9,h*0.66)); g2.fillStyle=on?'#2a1d00':'#fff'; g2.textAlign='left'; g2.textBaseline='middle';
-      g2.font='bold '+fs+'px system-ui,sans-serif'; const nm=deName(n.p); g2.fillText(nm,xa+5,y+h/2);
-      if(x1-xa>34){ const w=g2.measureText(nm).width; g2.font=Math.round(fs*0.72)+'px system-ui,sans-serif'; g2.fillText(String(octaveOf(n.p)),xa+6+w,y+h/2+fs*0.18); }
+      g2.font='bold '+fs+'px system-ui,sans-serif'; const nm=n.ph? '？' : deName(n.p); g2.fillText(nm,xa+5,y+h/2);
+      if(x1-xa>34&&!n.ph){ const w=g2.measureText(nm).width; g2.font=Math.round(fs*0.72)+'px system-ui,sans-serif'; g2.fillText(String(octaveOf(n.p)),xa+6+w,y+h/2+fs*0.18); }
       g2.textBaseline='alphabetic'; });
-    else if(x1>lw+8) labels.push(()=>{ g2.fillStyle=on?'#ffd166':'#fff'; g2.font='bold 10px system-ui,sans-serif'; g2.textAlign='center'; g2.fillText(deName(n.p),(xa+x1)/2,y-2); g2.textAlign='left'; });
+    else if(x1>lw+8) labels.push(()=>{ g2.fillStyle=on?'#ffd166':'#fff'; g2.font='bold 10px system-ui,sans-serif'; g2.textAlign='center'; g2.fillText(n.ph?'？':deName(n.p),(xa+x1)/2,y-2); g2.textAlign='left'; });
   });
   // 歌った音程の曲線（参考）
   if(s.curve&&s.curve.length){
@@ -1640,7 +1751,7 @@ $('closeEdit').onclick=()=>{ S.sel=-1; syncEdit(); draw(); };
 $('estep').onchange=e=>{ S.step=+e.target.value; };
 function syncEdit(){ const ok=!!(S.editMode&&S.sel>=0&&S.song&&S.song.notes[S.sel]);
   $('editBox').hidden=!ok; $('edNone').hidden=ok; $('closeEdit').hidden=!ok; $('qShort').hidden=!ok; $('qLong').hidden=!ok;
-  $('addNote').hidden=ok; $('punchBtn').hidden=ok||S.addArmed;
+  $('addNote').hidden=ok; { const ph=!!(S.song&&S.song.notes.some(n=>n.ph)); $('punchBtn').hidden=ok||S.addArmed||ph; $('humBtn').hidden=ok||S.addArmed||!ph; }
   $('toolsPanel').hidden=!S.toolsOpen;
   $('toolsToggle').textContent='その他'+(S.toolsOpen?' ▼':' ▲'); $('toolsToggle').classList.toggle('on',!!S.toolsOpen);
   if(!ok){ $('selName').textContent=''; $('selInfo').textContent= S.addArmed? '置きたい場所をタップ' : ''; return; }
@@ -1682,7 +1793,7 @@ cv.addEventListener('pointermove',e=>{ if(!drag) return; const dx=e.clientX-drag
   if(drag.note){ const d=drag.note, s=S.song; s.notes=JSON.parse(d.snap); const n=s.notes[d.idx]; if(!n) return;
     const db=dx/S.pps/((timeOf(d.bs+1)-timeOf(d.bs))||0.5); // 横の移動量を拍に換算
     if(d.mode==='move'){ const bs=snapB(d.bs+db), len=snapB(d.be)-snapB(d.bs), tr=s.transpose||0; setBeats(n,bs,bs+Math.max(S.step,len));
-      n.p=Math.max(geo.lo-tr,Math.min(geo.hi-tr,d.p-Math.round(dy/geo.rh))); n.f=n.p; } // 高さは、いま見えている範囲の中だけで動かす（画面は動かさない）
+      n.p=Math.max(geo.lo-tr,Math.min(geo.hi-tr,d.p-Math.round(dy/geo.rh))); n.f=n.p; if(n.p!==d.p) delete n.ph; } // 高さは、いま見えている範囲の中だけで動かす（画面は動かさない）
     else if(d.mode==='start'){ const be=snapB(d.be); setBeats(n,Math.min(be-S.step,snapB(d.bs+db)),be); }
     else { const bs=snapB(d.bs); setBeats(n,bs,Math.max(bs+S.step,snapB(d.be+db))); }
     n.m=true; settle(n); S.keepSel=false; S.vManual=true; syncEdit(); draw(); return; }
@@ -1749,10 +1860,10 @@ const Store={ mode:'local', db:null, uid:null, key:'humroll.songs.v1',
 };
 function packSong(){
   const s=S.song; storePart();
-  const pk=ns=>ns.map(n=>[r3(n.s),r3(n.e),n.p,n.f==null?n.p:Math.round(n.f*100)/100,n.m?1:0]);
+  const pk=ns=>ns.map(n=>[r3(n.s),r3(n.e),n.p,n.f==null?n.p:Math.round(n.f*100)/100,n.m?1:0,n.ph?1:0]);
   return { cur:s.cur, parts:s.parts.map(p=>({name:p.name,mute:!!p.mute,color:p.color||0,notes:pk(p.notes||[]),curve:(p.curve||[]).slice(0,30000),hop:p.hop||0.01,t0:r3(p.t0||0),cshift:p.cshift||0})), id:s.id, name:s.name, createdAt:s.createdAt||Date.now(), updatedAt:Date.now(), bpm:s.bpm, beatOffset:r3(s.beatOffset),
     beatsPerBar:s.beatsPerBar, quantize:!!s.quantize, key:s.key==null?'auto':s.key, transpose:s.transpose||0, tidyShort:s.tidyShort||0, tidyGap:!!s.tidyGap, tuningCents:s.tuningCents||0, hop:s.hop, t0:r3(s.t0||0),
-    curve:(s.curve||[]).slice(0,30000), cshift:s.cshift||0, notes:s.notes.map(n=>[r3(n.s),r3(n.e),n.p,n.f==null?n.p:Math.round(n.f*100)/100,n.m?1:0]), mode:s.mode||'free', unit:s.unit||24, barShift:s.barShift||0, tempoMode:s.tempoMode||'fixed', beats:s.beats? s.beats.map(r3):null, orn:s.orn==null?1:s.orn, snap:s.snap||'none', keyHint:s.keyHint==null?null:s.keyHint, driftCents:s.driftCents||0 };
+    curve:(s.curve||[]).slice(0,30000), cshift:s.cshift||0, notes:s.notes.map(n=>[r3(n.s),r3(n.e),n.p,n.f==null?n.p:Math.round(n.f*100)/100,n.m?1:0,n.ph?1:0]), mode:s.mode||'free', unit:s.unit||24, barShift:s.barShift||0, tempoMode:s.tempoMode||'fixed', beats:s.beats? s.beats.map(r3):null, orn:s.orn==null?1:s.orn, snap:s.snap||'none', keyHint:s.keyHint==null?null:s.keyHint, driftCents:s.driftCents||0 };
 }
 function unpackSong(d){
   return { id:d.id, name:d.name||'無題', createdAt:d.createdAt, bpm:+d.bpm||100, beatOffset:+d.beatOffset||0, beatsPerBar:+d.beatsPerBar||4,
@@ -1760,7 +1871,7 @@ function unpackSong(d){
     mode:d.mode||'free', unit:+d.unit||24, barShift:+d.barShift||0, tempoMode:d.tempoMode||'fixed', beats:Array.isArray(d.beats)&&d.beats.length>=2? d.beats.map(Number):null, orn:d.orn==null?1:+d.orn, snap:d.snap||'none', keyHint:(d.keyHint==null?null:+d.keyHint), driftCents:+d.driftCents||0,
     notes:unpackNotes(d.notes), ...unpackParts(d) };
 }
-function unpackNotes(arr){ return (arr||[]).map(a=>Array.isArray(a)?{s:+a[0],e:+a[1],p:+a[2],f:(a[3]==null?+a[2]:+a[3]),m:!!a[4]}:{s:+a.s,e:+a.e,p:+a.p,f:(a.f==null?+a.p:+a.f)}).filter(n=>isFinite(n.s)&&isFinite(n.e)&&isFinite(n.p)); }
+function unpackNotes(arr){ return (arr||[]).map(a=>Array.isArray(a)?{s:+a[0],e:+a[1],p:+a[2],f:(a[3]==null?+a[2]:+a[3]),m:!!a[4],ph:!!a[5]}:{s:+a.s,e:+a.e,p:+a.p,f:(a.f==null?+a.p:+a.f)}).filter(n=>isFinite(n.s)&&isFinite(n.e)&&isFinite(n.p)); }
 // パートのある保存データは、選んでいたパートの中身を s.notes などに広げる。パートのない古いデータは、1つのパート「メロディ」として扱う
 function unpackParts(d){ if(!Array.isArray(d.parts)||!d.parts.length) return {parts:[{name:'メロディ',mute:false,color:0}],cur:0};
   const parts=d.parts.map((p,i)=>({name:String(p.name||('パート'+(i+1))),mute:!!p.mute,color:+p.color||0,notes:unpackNotes(p.notes),curve:Array.isArray(p.curve)?p.curve:[],hop:+p.hop||0.01,t0:+p.t0||0,cshift:+p.cshift||0}));
@@ -2261,7 +2372,7 @@ function reana(){ if(!S.analysis) return; stop(); resegment(false); if(S.song.mo
 $('save').onclick=saveSong;
 function restartIfPlaying(){ if(S.playing){ stop(); S.noCount=true; try{ play(); }finally{ S.noCount=false; } } }
 // 版の表示（どの版を開いているか、画面で確かめられるようにする）と、古い版を覚えたブラウザ向けの読み込み直し
-const BUILD='11/19 14:48';
+const BUILD='11/19 17:54';
 document.querySelectorAll('.ver').forEach(el=>{ el.textContent='版 '+BUILD; });
 if(/^https?:$/.test(location.protocol)&&/github\.io$/.test(location.hostname)){ $('reloadNew').hidden=false; $('reloadNew').onclick=()=>{ location.replace(location.pathname+'?v='+Date.now()); }; }
 window.addEventListener('resize',resize);
